@@ -1,14 +1,14 @@
 import createTd from './modules/tdGen.js';
 import ColumnDefs from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
-import Filter from './modules/filters.js';
+import EFilter from './modules/filters.js';
 
 /**
  * example ColumnDefs: def = [{'name': 'description', 'field':'dsc', ...},
  * 							  ...]
  * mandetary def keys: name
  * */
-const TABLE_CLASS			= "e-tables";
+const TABLE_CLASS			= "e-table";
 
 class ETable {
 	#table_class			= TABLE_CLASS;
@@ -23,7 +23,7 @@ class ETable {
 	}
 
 	createFilter(i, text, exact) {
-		let xfilter 	= new Filter(this.#colDefs, i, text, exact === true);
+		let xfilter 	= new EFilter(this.#colDefs, i, text, exact === true);
 		return xfilter;
 	}
 
@@ -84,6 +84,9 @@ class ETable {
 		return tr;
 	}
 
+	getRawData() {
+		return this.#table_raw_data;
+	}
 
 	#createHeader() {
 		let theader = document.createElement('thead');
@@ -92,8 +95,8 @@ class ETable {
 		for (const [i,v] of cols.entries()) {
 			
 			if (this.#colDefs.isFilterable(i)) {
-				let btn = Filter.createFilterButton();
-				tr.cells[i]?.appendChild(btn);
+				//let btn = EFilter.createFilterButton();
+				//tr.cells[i]?.appendChild(btn);
 			}
 		}
 		theader.appendChild(tr);
@@ -121,11 +124,17 @@ class ETable {
 		
 		this.#table_raw_data.forEach( rowData => {
 			let tr = this.#createRow(rowData);
-			if (Filter.filterRow(tr, xfilter)) {
+			if (xfilter == null) {
 				tbody.appendChild(tr);
+			} else {
+				if (EFilter.filterRow(tr, xfilter)) {
+					tbody.appendChild(tr);
+				}
 			}
 			
+			
 		});
+		EFilter.createFilterButtons(table, this, this.#colDefs);
 		table.appendChild(tbody);
 		//footer
 		table.appendChild(this.#createFooter(table));
@@ -134,4 +143,4 @@ class ETable {
 
 }
 
-export default TakafulTables;
+export default ETable;

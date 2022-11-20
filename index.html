@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/etable.css">
+    <link rel="shortcut icon" href="#">
+    <script type="module" src="./js/ETable.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="data.js"></script>
+    <title>Document</title>
+</head>
+<body>
+
+    <div class="container">
+        <input id="searchBox" type="text" placeholder="search">
+    </div>
+
+
+    <script type="module">
+        import ETable from "./js/ETable.js";
+        import EFilter from "./js/modules/filters.js"
+        document.getElementById("searchBox").addEventListener('keyup', e => {
+            document.getElementById("mytable")?.remove();
+            loadTable();
+        });
+
+        function loadTable() {
+            let cols        = [ {name:"country", field:"Name", filter:true},
+                                {name:"symbol", field:"Country", filter:true},
+                                {name:"currency", field:"Currency", filter:true},
+                                {name:"Region", field:"Region", filter:true},
+                                {name:"Population", field:"Population", filter:true},
+                                {name:"Birth rate", field:"Birthrate", aggregate:"avg"},
+                              ];
+            let etable       = new ETable(cols);
+            let container   = document.getElementsByClassName("container")[0];
+            data.forEach(c => {
+                etable.addRow(c);
+            });
+
+            let filters = [etable.createFilter(0, document.getElementById("searchBox").value)];
+            let table = etable.render(filters);
+
+            table.setAttribute("id", "mytable");
+            container.appendChild(table);
+        }
+        loadTable();
+    </script>
+</body>
+</html>

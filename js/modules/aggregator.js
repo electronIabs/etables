@@ -47,7 +47,9 @@ class TableAggregator {
 				vals[i] = 0.0;
 				rows.forEach((row,j) => {
 					const cellVal = parseFloat(row.cells[i].innerHTML);
-					vals[i] = aggregate(vals[i], cellVal, j,rows.length);
+					if (typeof cellVal === 'number' && isFinite(cellVal)) {
+						vals[i] = aggregate(vals[i], cellVal, j,rows.length);
+					}
 				});
 			}else{
 				vals[i] = '';
