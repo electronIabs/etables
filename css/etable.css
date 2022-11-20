@@ -1,0 +1,87 @@
+
+:root {
+    --etable-color1: #587e76;
+}
+
+
+.e-table {
+	border-collapse: collapse;
+	margin: 25px 0;
+	font-size: 0.9em;
+	min-width: 300px;
+	border-radius: 3px 3px 0 0;
+	width:100%;
+	overflow: hidden;
+}
+
+.e-table thead tr {
+	background-color: var(--etable-color1);
+	color: #ffffff;
+	text-align: left;
+	font-weight: bold;
+}
+
+.e-table th,
+.e-table td {
+	padding: 6px 5px;
+}
+
+.e-table tbody tr {
+	border-bottom: 1px solid #dddddd
+}
+
+.e-table.striped tbody tr:nth-of-type(even) {
+	background-color: #f3f3f3;
+}
+
+.e-table tfoot tr:last-of-type {
+	border-bottom: 2px solid var(--etable-color1);
+}
+
+.e-table tbody tr:last-of-type,
+.e-table tbody tr.vs {
+	border-bottom: 2px dashed #dddddd;
+}
+.e-table tfoot tr:first-of-type {
+	border-top: 2px dashed #dddddd;
+}
+
+.e-table .btn {
+    position: absolute;
+    background-color: #FFBA08;
+    border: 1px solid;
+    color:#52796F;
+    margin-left: 10px;
+}
+
+.e-table .btn:hover {
+    background-color: #52796F;
+    color: #FFBA08;
+    border: 1px solid;
+    transition: all .35s;
+}
+
+
+
+
+.hj-filterbox {
+    max-height: 250px;
+    background-color: darkcyan;
+    width: 200px;
+}
+
+.hj-filterbox div.header {
+    text-align: center;
+}
+
+.hj-filterbox div.body {
+    display:flex;
+    overflow:hidden;
+    overflow-y:scroll;
+}
+
+.hj-filterbox div.body div{
+    display:flex;
+    overflow:hidden;
+}
+
