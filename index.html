@@ -20,7 +20,8 @@
 
     <script type="module">
         import ETable from "./js/ETable.js";
-        import EFilter from "./js/modules/filters.js"
+        import EFilter from "./js/modules/filters.js";
+
         document.getElementById("searchBox").addEventListener('keyup', e => {
             document.getElementById("mytable")?.remove();
             loadTable();
@@ -40,8 +41,8 @@
                 etable.addRow(c);
             });
 
-            let filters = [etable.createFilter(0, document.getElementById("searchBox").value)];
-            let table = etable.render(filters);
+            etable.appendFilter(0, [document.getElementById("searchBox").value], false);
+            let table = etable.render();
 
             table.setAttribute("id", "mytable");
             container.appendChild(table);

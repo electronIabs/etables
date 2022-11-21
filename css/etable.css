@@ -1,6 +1,10 @@
 
 :root {
-    --etable-color1: #587e76;
+    --etable-color:         #587e76;
+    --etable-border-color:  #ff2222;
+    --etable-yellow:        #f3ce29;
+    --etable-light-gray:    #d4d4d4;
+    --etable-middle-gray:   #b4b4b4;
 }
 
 
@@ -10,12 +14,13 @@
 	font-size: 0.9em;
 	min-width: 300px;
 	border-radius: 3px 3px 0 0;
+    border-style: 3px solid var(--etable-border-color);
 	width:100%;
 	overflow: hidden;
 }
 
 .e-table thead tr {
-	background-color: var(--etable-color1);
+	background-color: var(--etable-color);
 	color: #ffffff;
 	text-align: left;
 	font-weight: bold;
@@ -35,7 +40,7 @@
 }
 
 .e-table tfoot tr:last-of-type {
-	border-bottom: 2px solid var(--etable-color1);
+	border-bottom: 2px solid var(--etable-color);
 }
 
 .e-table tbody tr:last-of-type,
@@ -47,43 +52,47 @@
 }
 
 .e-table .btn {
-    position: absolute;
-    background-color: #FFBA08;
+    background-color: var(--etable-yellow);
     border: 1px solid;
-    color:#52796F;
-    margin-right: 5px;
+    color: var(--etable-color);
+    margin-right: 2px;
     margin-left: 2px;
+    transition: all .35s;
 }
 
 .e-table .btn:hover {
-    background-color: #52796F;
-    color: #FFBA08;
-    border: 1px solid;
-    transition: all .35s;
+    mix-blend-mode      :multiply;
+    border: 1px solid var(--etable-border-color);
 }
 
 .etable-filterBox {
     position:absolute;
     max-height: 250px;
     height: 150px;
-    background-color: #e0ddd0e0;
+    background-color: var(--etable-light-gray);
+    opacity: 0.95;
     width: 200px;
     overflow: auto;
     border-radius: 10px;
-    border: 3px solid #FFBA08;
+    border: 3px solid var(--etable-yellow);
     padding-top:3px;
+    margin-top:10px
 }
 
 .etable-filterBox div.header {
     text-align: center;
     max-height: 10%;
+    margin-bottom: 8px;
 }
 
 .etable-filterBox div.body {
     overflow-y:auto;
-    margin-top: 3%;
     max-height: 80%;
     align-self: center;
+}
+
+.etable-filterBox div.body > div {
+    border-bottom: 1px solid var(--etable-middle-gray);
 }
 
 

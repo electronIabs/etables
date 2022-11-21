@@ -1,4 +1,5 @@
-export default function createTd(text) {
+
+export default function createTd(text: string) {
     let td = document.createElement('td');
     let cell = document.createTextNode(text);
     td.appendChild(cell);

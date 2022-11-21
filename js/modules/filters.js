@@ -1,159 +1,84 @@
-import ColumnDefs from "./ColumnDefs.js";
-import {newUID} from "./utils.js";
-
-// filters: equals, MoreThan, LessThan, contains
-// final_filter: composed of: and / or
-
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, privateMap, value) {
+    if (!privateMap.has(receiver)) {
+        throw new TypeError("attempted to set private field on non-instance");
+    }
+    privateMap.set(receiver, value);
+    return value;
+};
+var _colDefs, _colField;
+import CheckFilterBox from "./FilterCheckBox.js";
 class EFilter {
-    #colDefs    = {};
-    #contains   = "";
-    #exact      = "";
-    #colIndex   = 0;
-    #colField   = "";
-
     constructor(ColumnDefs, colIndex, text, isExact = true) {
-        if (!ColumnDefs.isFilterable(colIndex)) {
-            throw `Column ${colIndex} is not a filterable column`;
-        }
-        this.#colField  = ColumnDefs.getColumnField(colIndex, 'field');
-        this.colIndex   = colIndex;
-        this.#colDefs   = ColumnDefs;
-        if (isExact) {
-            this.#exact     = text;
-        } else {
-            this.#contains  = text;
-        }
+        _colDefs.set(this, void 0);
+        this.text = [];
+        this.isExact = false;
+        _colField.set(this, "");
+        __classPrivateFieldSet(this, _colField, ColumnDefs.getColumnField(colIndex, 'field'));
+        this.colIndex = colIndex;
+        __classPrivateFieldSet(this, _colDefs, ColumnDefs);
+        this.text = text;
+        this.isExact = isExact;
     }
-
-    #getFilterableColumns() {
-        let r = [];
-        for(let i=0; i < this.#colDefs.getColumnsCount(); i++) {
-            if (this.#colDefs.isFilterable(i)){
-                r.push(i);
-            }
-        }
-        return r;
+    getFilterColumnIndex() {
+        return this.colIndex;
     }
-
-    #applyExact(row) {
-        return row.cells[this.#colIndex].innerHTML === this.#exact;
+    applyExact(row) {
+        return this.text.includes(row.cells[this.colIndex].innerHTML);
     }
-
-    #applyContains(row) {
-        return row.cells[this.#colIndex].innerHTML.includes(this.#contains);
+    applyContains(row) {
+        return this.text.filter(v => row.cells[this.colIndex].innerHTML.includes(v)).length != 0;
     }
-
     applyFilter(row) {
-        if (this.#exact !== "") {
-            return (this.#applyExact(row));
-        } else if (this.#contains !== "") {
-            return (this.#applyContains(row));
+        if (this.text.length == 0) {
+            return true;
         }
-        return true;
+        if (this.isExact) {
+            return (this.applyExact(row));
+        }
+        else {
+            return (this.applyContains(row));
+        }
     }
-
-
-    static #createSearchBox() {
-        let search = document.createElement("input");
-        search.setAttribute("placeholder", "search...");
-        return search;
-    }
-
-    static #createDivCheckBox(data) {
-        let div = document.createElement("div");
-        let checkbox = document.createElement("input");
-        let label = document.createElement("label");
-        let uid = newUID();
-        checkbox.setAttribute("type", 'checkbox');
-        checkbox.checked = true;
-        checkbox.setAttribute("id", uid);
-        label.setAttribute("for", uid);
-        label.innerHTML = data;
-        div.appendChild(checkbox);
-        div.appendChild(label);
-        return div;
-    }
-
-    static #filterBoxOptions(box, text) {
-        Array.from(box.getElementsByClassName('body')[0].getElementsByTagName("label"))
-                    .forEach(lbl => {
-                        if (lbl.innerHTML.toLowerCase().includes(text)) {
-                            lbl.parentElement.hidden = false;
-                        } else {
-                            lbl.parentElement.hidden = true;
-                        }
-                  });
-    }
-
-    static #createFilterBox(etable, colField) {
-
-        let uniqueData = [...new Set(etable.getRawData().map(r => r[colField]))];
-        let box = document.createElement("div");
-        let bodyUID = newUID();
-        box.classList.add("etable-filterBox")
-        let header = document.createElement("div");
-        let searchBox = EFilter.#createSearchBox();
-        searchBox.addEventListener('keyup', e => EFilter.#filterBoxOptions(box, e.target.value));
-        header.appendChild(searchBox);
-        header.classList.add("header")
-        let body = document.createElement("div");
-        body.classList.add("body")
-        body.setAttribute('id', bodyUID);
-        uniqueData.forEach(d => body.appendChild(EFilter.#createDivCheckBox(d)));
-        box.appendChild(header);
-        box.appendChild(body);
-        return box;
-    }
-
-
-
     static filterRow(tr, filters) {
-    
         let result = true;
         filters.forEach(filter => {
-            result &= filter.applyFilter(tr);
+            result = result && filter.applyFilter(tr);
         });
         return result;
     }
-
-    static #positionBox(rect, box) {
+    static positionBox(rect, box) {
         if (rect.right > window.innerWidth / 2) {
             box.style.left = `${rect.right - 200}px`;
-        } else {
+        }
+        else {
             box.style.left = `${rect.left}px`;
         }
-        console.log("window width ", window.innerWidth, " rect left", rect.left, "box width", box.style.width);
-        
         box.style.top = `${rect.bottom}px`;
     }
-
-	static createFilterButtons(table, etable, colDefs) {
-        
-        for (let i = 0; i<colDefs.getColumnsCount(); i++) {
+    static createFilterButtons(table, etable, colDefs) {
+        var _a;
+        for (let i = 0; i < colDefs.getColumnsCount(); i++) {
             if (colDefs.isFilterable(i)) {
-                let headerRow = table.getElementsByTagName('thead')[0]?.firstChild;
-
+                let headerRow = (_a = table.getElementsByTagName('thead')[0]) === null || _a === void 0 ? void 0 : _a.firstChild;
                 let filterBtn = document.createElement("button");
                 filterBtn.type = "button";
                 filterBtn.classList.add("filterBtn");
                 filterBtn.classList.add("btn");
                 filterBtn.classList.add("fa");
-                filterBtn.classList.add("fa-filter");                
+                filterBtn.classList.add("fa-filter");
                 filterBtn.addEventListener('click', e => {
-                    document.getElementsByClassName("etable-filterBox")[0]?.remove();
-                    let box = EFilter.#createFilterBox(etable, colDefs.getColumnField(i, 'field'));
-                    const rect = e.target.getBoundingClientRect();
-                    EFilter.#positionBox(rect, box);
+                    var _a, _b;
+                    (_a = document.getElementsByClassName("etable-filterBox")[0]) === null || _a === void 0 ? void 0 : _a.remove();
+                    let filterBox = new CheckFilterBox(etable, i);
+                    let box = filterBox.createFilterBox(colDefs.getColumnField(i, 'field'));
+                    const rect = (_b = e.target) === null || _b === void 0 ? void 0 : _b.getBoundingClientRect();
+                    EFilter.positionBox(rect, box);
                     document.body.appendChild(box);
-                })
+                });
                 headerRow.cells[i].appendChild(filterBtn);
             }
         }
-
-        /*
-		
-		return filterBtn;*/
-	}
+    }
 }
-
+_colDefs = new WeakMap(), _colField = new WeakMap();
 export default EFilter;

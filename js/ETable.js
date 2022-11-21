@@ -1,146 +1,145 @@
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, privateMap, value) {
+    if (!privateMap.has(receiver)) {
+        throw new TypeError("attempted to set private field on non-instance");
+    }
+    privateMap.set(receiver, value);
+    return value;
+};
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, privateMap) {
+    if (!privateMap.has(receiver)) {
+        throw new TypeError("attempted to get private field on non-instance");
+    }
+    return privateMap.get(receiver);
+};
+var _table_class, _table_raw_data, _colDefs, _aggregator;
 import createTd from './modules/tdGen.js';
 import ColumnDefs from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
 import EFilter from './modules/filters.js';
-
-/**
- * example ColumnDefs: def = [{'name': 'description', 'field':'dsc', ...},
- * 							  ...]
- * mandetary def keys: name
- * */
-const TABLE_CLASS			= "e-table";
-
+const TABLE_CLASS = "e-table";
 class ETable {
-	#table_class			= TABLE_CLASS;
-	#table_raw_data			= [];
-    #colDefs 				= [{}];
-	#aggregator				= {};
-
-	constructor(header_cols) {
-		if (!Array.isArray(header_cols)) { throw 'header is not an array'; }
-	    this.#colDefs = new ColumnDefs(header_cols);
-		this.#aggregator = new TableAggregator(this.#colDefs);
-	}
-
-	createFilter(i, text, exact) {
-		let xfilter 	= new EFilter(this.#colDefs, i, text, exact === true);
-		return xfilter;
-	}
-
-	#createRowFromObject(rowData) {
-		let tr = document.createElement('tr');
-		let max_cols = this.#colDefs.getColumnsCount();
-		let i = 0;
-		if (typeof rowData === "object" && rowData !== null) {
-			for (const [key, value] of Object.entries(rowData)) {
-				i ++;
-				let td = createTd(value);
-				tr.appendChild(td);
-				if (i >= max_cols) { break; }
-			}
-			return tr;
-		} else {
-			throw 'data is not an object';
-		}
-	}
-
-	#createRowFromArray(rowData) {
-		let tr = document.createElement('tr');
-		if (Array.isArray(rowData)) {
-			let i = 0;
-			rowData.forEach(element => {
-				tr.appendChild(createTd(element));
-				if (++i > this.#colDefs.length) { return; }
-			});
-			return tr;
-		} else {
-			throw 'cant create row from non array';
-		}
-	}
-
-	setRows(rows) {
-		if (!Array.isArray(rows)) {
-			throw 'setRows called with non array';
-		}
-		this.#table_raw_data = rows;
-	}
-
-	addRow(rowData) {
-		this.#table_raw_data.push(rowData);
-	}
-
-	#createRow(data) {
-		let tr = {};
-		if (Array.isArray(data)) {
-			tr = this.#createRowFromArray(data);
-		} else if (this.#colDefs.getFields().length > 0) {
-			tr = this.#colDefs.createRowFromFields(data);
-		} else if (typeof data === 'object') {
-			tr = this.#createRowFromObject(data);
-		} else {
-			tr = document.createElement('tr');
-			tr.appendChild(createTd(data));
-		}
-		return tr;
-	}
-
-	getRawData() {
-		return this.#table_raw_data;
-	}
-
-	#createHeader() {
-		let theader = document.createElement('thead');
-		let cols = this.#colDefs.getNames();
-		let tr = this.#createRow(cols);
-		for (const [i,v] of cols.entries()) {
-			
-			if (this.#colDefs.isFilterable(i)) {
-				//let btn = EFilter.createFilterButton();
-				//tr.cells[i]?.appendChild(btn);
-			}
-		}
-		theader.appendChild(tr);
-		return theader;
-	}
-
-	#createFooter(table) {
-		let tfoot 		= document.createElement('tfoot');
-		let cells 		= [];
-		let data 		= this.#aggregator.aggregate(table);
-		let row 		= this.#createRow(data);
-	    tfoot.appendChild(row);	
-		return tfoot;
-	}
-    
-	render(xfilter) {
-		let table 		= document.createElement('table');
-		table.classList.add(this.#table_class)
-		
-		//header
-		table.appendChild(this.#createHeader());
-
-		//body
-		let tbody = document.createElement('tbody');
-		
-		this.#table_raw_data.forEach( rowData => {
-			let tr = this.#createRow(rowData);
-			if (xfilter == null) {
-				tbody.appendChild(tr);
-			} else {
-				if (EFilter.filterRow(tr, xfilter)) {
-					tbody.appendChild(tr);
-				}
-			}
-			
-			
-		});
-		EFilter.createFilterButtons(table, this, this.#colDefs);
-		table.appendChild(tbody);
-		//footer
-		table.appendChild(this.#createFooter(table));
-		return table;
-	}
-
+    constructor(header_cols) {
+        _table_class.set(this, TABLE_CLASS);
+        _table_raw_data.set(this, []);
+        _colDefs.set(this, void 0);
+        _aggregator.set(this, void 0);
+        if (!Array.isArray(header_cols)) {
+            throw 'header is not an array';
+        }
+        __classPrivateFieldSet(this, _colDefs, new ColumnDefs(header_cols));
+        __classPrivateFieldSet(this, _aggregator, new TableAggregator(__classPrivateFieldGet(this, _colDefs)));
+        this.filters = [];
+        this.table = document.createElement('table');
+        this.table.classList.add(__classPrivateFieldGet(this, _table_class));
+    }
+    appendFilter(i, text, exact) {
+        let init = [];
+        this.filters = this.filters.reduce((p, c) => (c.getFilterColumnIndex() != i && p.push(c), p), init);
+        let filter = new EFilter(__classPrivateFieldGet(this, _colDefs), i, text, exact);
+        this.filters.push(filter);
+    }
+    clearFilters() {
+        this.filters = [];
+    }
+    createRowFromObject(rowData) {
+        let tr = document.createElement('tr');
+        let max_cols = __classPrivateFieldGet(this, _colDefs).getColumnsCount();
+        let i = 0;
+        if (typeof rowData === "object" && rowData !== null) {
+            for (const [key, value] of Object.entries(rowData)) {
+                i++;
+                let td = createTd(value);
+                tr.appendChild(td);
+                if (i >= max_cols) {
+                    break;
+                }
+            }
+            return tr;
+        }
+        else {
+            throw 'data is not an object';
+        }
+    }
+    createRowFromArray(rowData) {
+        let tr = document.createElement('tr');
+        if (Array.isArray(rowData)) {
+            let i = 0;
+            rowData.forEach(element => {
+                tr.appendChild(createTd(element));
+                if (++i > __classPrivateFieldGet(this, _colDefs).getColumnsCount()) {
+                    return;
+                }
+            });
+            return tr;
+        }
+        else {
+            throw 'cant create row from non array';
+        }
+    }
+    setRows(rows) {
+        if (!Array.isArray(rows)) {
+            throw 'setRows called with non array';
+        }
+        __classPrivateFieldSet(this, _table_raw_data, rows);
+    }
+    addRow(rowData) {
+        __classPrivateFieldGet(this, _table_raw_data).push(rowData);
+    }
+    createRow(data) {
+        let tr;
+        if (Array.isArray(data)) {
+            tr = this.createRowFromArray(data);
+        }
+        else if (__classPrivateFieldGet(this, _colDefs).getFields().length > 0) {
+            tr = __classPrivateFieldGet(this, _colDefs).createRowFromFields(data);
+        }
+        else if (typeof data === 'object') {
+            tr = this.createRowFromObject(data);
+        }
+        else {
+            tr = document.createElement('tr');
+            tr.appendChild(createTd(data));
+        }
+        return tr;
+    }
+    getRawData() {
+        return __classPrivateFieldGet(this, _table_raw_data);
+    }
+    createHeader() {
+        let theader = document.createElement('thead');
+        let cols = __classPrivateFieldGet(this, _colDefs).getNames();
+        let tr = this.createRow(cols);
+        for (const [i, v] of cols.entries()) {
+            if (__classPrivateFieldGet(this, _colDefs).isFilterable(i)) {
+            }
+        }
+        theader.appendChild(tr);
+        return theader;
+    }
+    createFooter(table) {
+        let tfoot = document.createElement('tfoot');
+        let data = __classPrivateFieldGet(this, _aggregator).aggregate(table);
+        let row = this.createRow(data);
+        tfoot.appendChild(row);
+        return tfoot;
+    }
+    render() {
+        Array.from(this.table.getElementsByTagName("thead")).forEach(b => b.remove());
+        Array.from(this.table.getElementsByTagName("tbody")).forEach(b => b.remove());
+        Array.from(this.table.getElementsByTagName("tfoot")).forEach(b => b.remove());
+        this.table.appendChild(this.createHeader());
+        EFilter.createFilterButtons(this.table, this, __classPrivateFieldGet(this, _colDefs));
+        let tbody = document.createElement('tbody');
+        __classPrivateFieldGet(this, _table_raw_data).forEach(rowData => {
+            let tr = this.createRow(rowData);
+            if (EFilter.filterRow(tr, this.filters)) {
+                tbody.appendChild(tr);
+            }
+        });
+        this.table.appendChild(tbody);
+        this.table.appendChild(this.createFooter(this.table));
+        return this.table;
+    }
 }
-
+_table_class = new WeakMap(), _table_raw_data = new WeakMap(), _colDefs = new WeakMap(), _aggregator = new WeakMap();
 export default ETable;
