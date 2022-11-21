@@ -27,6 +27,7 @@ export abstract class FilterBox {
         let searchBox = FilterBox.createSearchBox();
         let applyBtn  = document.createElement("button");
         applyBtn.innerText ="apply"; 
+        applyBtn.classList.add("ebtn");
         applyBtn.addEventListener("click", e => this.applyFilter(this, e));
         
         // @ts-ignore

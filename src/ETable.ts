@@ -1,7 +1,7 @@
 import createTd from './modules/tdGen.js';
 import ColumnDefs, {columndef} from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
-import EFilter from './modules/filters.js';
+import EFilter from './modules/EFilter.js';
 
 /**
  * example ColumnDefs: def = [{'name': 'description', 'field':'dsc', ...},

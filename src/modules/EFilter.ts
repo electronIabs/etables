@@ -51,27 +51,27 @@ class EFilter {
         return result;
     }
 
-    private static positionBox(rect: any, box: any) {
+    private static positionBox(rect: any, box: HTMLDivElement) {
         if (rect.right > window.innerWidth / 2) {
-            box.style.left = `${rect.right - 200}px`;
+            box.style.left = `${rect.right - 250}px`;
         } else {
-            box.style.left = `${rect.left}px`;
+            box.style.left = `${rect.left - 50}px`;
         }
         box.style.top = `${rect.bottom}px`;
     }
 
-	static createFilterButtons(table: any, etable: ETable, colDefs: ColumnDefs) {
+	static createFilterButtons(table: HTMLTableElement, etable: ETable, colDefs: ColumnDefs) {
         
         for (let i = 0; i<colDefs.getColumnsCount(); i++) {
             if (colDefs.isFilterable(i)) {
-                let headerRow = table.getElementsByTagName('thead')[0]?.firstChild;
+                let headerRow = table.getElementsByTagName('thead')[0]?.rows[0];
 
                 let filterBtn = document.createElement("button");
                 filterBtn.type = "button";
                 filterBtn.classList.add("filterBtn");
-                filterBtn.classList.add("btn");
+                filterBtn.classList.add("ebtn");
                 filterBtn.classList.add("fa");
-                filterBtn.classList.add("fa-filter");                
+                filterBtn.classList.add("fa-ellipsis");                
                 filterBtn.addEventListener('click', e => {
                     document.getElementsByClassName("etable-filterBox")[0]?.remove();
                     let filterBox = new CheckFilterBox(etable, i);

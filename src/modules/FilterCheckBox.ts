@@ -1,7 +1,7 @@
 
 import { newUID } from "./utils.js";
 import { FilterBox } from "./FilterBox.js"
-import EFilter from "./filters.js";
+import EFilter from "./EFilter.js";
 
 class CheckFilterBox extends FilterBox {
 

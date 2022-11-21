@@ -5,6 +5,8 @@
     --etable-yellow:        #f3ce29;
     --etable-light-gray:    #d4d4d4;
     --etable-middle-gray:   #b4b4b4;
+    --etable-gray:          #999999;
+    --etable-dark-gray:     #444444;
 }
 
 
@@ -24,6 +26,22 @@
 	color: #ffffff;
 	text-align: left;
 	font-weight: bold;
+}
+
+.e-table thead .ebtn {
+    border-radius: 30px;
+    float: right;
+    margin-right: 3px;
+}
+
+.e-table thead td {
+    border-left: 1px solid var(--etable-gray);
+    border-bottom: 2px solid var(--etable-light-gray);
+    border-right: 1px solid var(--etable-light-gray);
+}
+
+.e-table td {
+    border-left: 1px dashed var(--etable-light-gray)
 }
 
 .e-table th,
@@ -51,27 +69,28 @@
 	border-top: 2px dashed #dddddd;
 }
 
-.e-table .btn {
-    background-color: var(--etable-yellow);
-    border: 1px solid;
+.e-table .ebtn {
+    background-color: var(--etable-gray);
+    border: 1px solid var(--etable-dark-gray);
     color: var(--etable-color);
     margin-right: 2px;
     margin-left: 2px;
-    transition: all .35s;
+    transition: all .5s;
 }
 
-.e-table .btn:hover {
-    mix-blend-mode      :multiply;
+.e-table .ebtn:hover {
+    background-color: var(--etable-light-gray);
     border: 1px solid var(--etable-border-color);
 }
 
 .etable-filterBox {
     position:absolute;
-    max-height: 250px;
-    height: 150px;
+    max-height: 350px;
+    max-width: 350;
     background-color: var(--etable-light-gray);
     opacity: 0.95;
-    width: 200px;
+    width: 280px;
+    height: 300px;
     overflow: auto;
     border-radius: 10px;
     border: 3px solid var(--etable-yellow);
@@ -80,7 +99,8 @@
 }
 
 .etable-filterBox div.header {
-    text-align: center;
+    /*text-align: center;*/
+    display:inline-block;
     max-height: 10%;
     margin-bottom: 8px;
 }

@@ -16,6 +16,7 @@ export class FilterBox {
         let searchBox = FilterBox.createSearchBox();
         let applyBtn = document.createElement("button");
         applyBtn.innerText = "apply";
+        applyBtn.classList.add("ebtn");
         applyBtn.addEventListener("click", e => this.applyFilter(this, e));
         searchBox.addEventListener('keyup', e => this.SearchBoxKeyupEvent(this, e));
         header.appendChild(searchBox);
