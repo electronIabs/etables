@@ -2,7 +2,7 @@ import createTd from './modules/utils.js';
 import ColumnDefs, {columndef} from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
 import EFilter from './modules/EFilter.js';
-import EGroup, {GroupedRow} from './modules/EGroup.js';
+import EGroup, {EGroupOption, GroupedRow} from './modules/EGroup.js';
 
 
 /**
@@ -18,18 +18,20 @@ class ETable {
     private colDefs			: 	ColumnDefs;
 	private aggregator		: 	TableAggregator;
 	private filters 		:	EFilter[];
-	private groups			:	EGroup[];
-	groupRows				: 	any[];
+	private egroup			:	EGroup;
+	gOptions				: 	number;
 	private table			: 	HTMLTableElement;
 
 
-	constructor(header_cols: columndef[]) {
-	    this.colDefs = new ColumnDefs(header_cols);
+	constructor(header_cols: columndef[], GroupOptions: EGroupOption[] = []) {
+	    this.colDefs 	= new ColumnDefs(header_cols);
 		this.aggregator = new TableAggregator(this.colDefs);
-		this.filters = [];
-		this.groupRows = [];
-		this.groups = EGroup.getGroups(this.colDefs, d => this.createRow(d),
-													r => this.aggregator.aggregate(r));
+		this.filters 	= [];
+		this.gOptions 	= GroupOptions.length;
+		this.egroup 	= new EGroup(GroupOptions, this.colDefs, 
+										d => this.createRow(d),
+										r => this.aggregator.aggregate(r));
+
 		this.table 		= document.createElement('table');
 		this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
 		this.table.classList.add(this.#table_class)
@@ -143,17 +145,12 @@ class ETable {
 		let tbody = document.createElement('tbody');
 		let rows: HTMLTableRowElement[] = [];
 		let filteredRaws: any[] = [];
-
-		if (this.groups.length > 1) {
-			let group0 = this.groups[0].group0(this.getRawData(), this.filters);
-			let group1 = this.groups[1].group1(group0);
-			rows = group1.flatMap(g => {
-				const i = g.childGroups.length > 0 ? 1:0;
-				return this.groups[i].createGroupedRowsLayered(g);
-			});
-		} else if (this.groups.length > 0) {
-			let group0 = this.groups[0].group0(this.getRawData(), this.filters);
-			rows = group0.flatMap(g => this.groups[0].createGroupedRows(g));
+		if (this.gOptions > 0) {
+			let groups = this.egroup.groupAll(this.getRawData(), this.filters);
+			console.log(groups);
+			let rows = this.egroup.createTableRows(groups);
+			console.log(rows);
+			rows.forEach(r => tbody.appendChild(r));
 		} else {
 			this.getRawData().forEach(raw => {
 				if (EFilter.filterRow(raw, this.filters)) {
@@ -165,9 +162,8 @@ class ETable {
 		rows.forEach(tr => tbody.appendChild(tr));
 		this.table.appendChild(tbody);
 
-
 		//footer
-		if (this.groups.length > 0) {
+		if (this.gOptions > 0) {
 			this.table.appendChild(this.createFooterGrouped(rows));
 		} else {
 			this.table.appendChild(this.createFooter(filteredRaws));

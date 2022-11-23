@@ -12,43 +12,66 @@ interface GroupedRow {
     childGroups         : GroupedRow[];
 }
 
+interface EGroupOption {
+    field               : string;
+    layer               : number;
+    groupBy             : KeyResolverFn;
+}
+
 type createRowFn    = (d: any) => HTMLTableRowElement;
 type aggregateFn    = (raw: any[]) => string[];
 type KeyResolverFn  = (v: string) => string;
 
 const identityResolver      : KeyResolverFn         = (V) => V; 
 const yearResolver          : KeyResolverFn         = (v) => v.split("-")[0];
+const decadeResolver        : KeyResolverFn         = (v) => {
+    const year = parseInt(yearResolver(v));
+    const decade = Math.floor((year / 10)) * 10;
+    return decade + "-" + (decade + 10)
+};
 
+
+class EGroupTableConverter {
+    
+}
 
 class EGroup {
+    private groupOptions            : EGroupOption[];
     private colDef                  : ColumnDefs;
-    private readonly colIndex       : number;
-    //private readonly rowCreator     : createRowFn;
     private rowCreator       : createRowFn;
     private aggregator       : aggregateFn;
-    private keyResolver      : KeyResolverFn;
-
+    
     private static readonly PARENT_CLASS_NAME       = "group-parent";
     private static readonly PARENT_CLASS_NAME_CHILD = "group-parent-child";
     private static readonly COLLAPSED_CLASS_NAME    = "collapsed";
     private static readonly getLayeredParentClass   = (g: GroupedRow) => EGroup.PARENT_CLASS_NAME + "_" + g.layer;
-    constructor(colIndex: number, colDef: ColumnDefs, crFn: createRowFn, agFn: aggregateFn, groupResolver: KeyResolverFn) {
-        this.colDef     = colDef;
-        this.colIndex   = colIndex;
-        this.rowCreator = crFn;
-        this.aggregator = agFn;
-        this.keyResolver = groupResolver;
+    
+    
+    constructor(groupOptions: EGroupOption[], colDef: ColumnDefs, 
+                crFn: createRowFn, 
+                agFn: aggregateFn) {
+        this.groupOptions   = groupOptions;
+        this.groupOptions.forEach((g,i) => {
+            g.groupBy        = EGroup.getResolver(g.groupBy);
+            g.layer          = i;
+        });
+        this.colDef         = colDef;
+        this.rowCreator     = crFn;
+        this.aggregator     = agFn;
     }
 
-    private hashKey(v: string): string {
-        return cyrb53(this.keyResolver(v));
+    private static hashKey(groupOptions: EGroupOption, v: string): string {
+        let value = groupOptions.groupBy(v)
+        return cyrb53(value);
     }
 
-    static getResolver(d:any): KeyResolverFn {
+    private static getResolver(d:any): KeyResolverFn {
         let resolver = d;
         if (typeof(d) !== 'function') {
             if (d === 'year') {
                 resolver = yearResolver;
+            } else if (d === 'decade') {
+                resolver = decadeResolver;
             } else {
                 resolver = identityResolver;
             }
@@ -56,25 +79,17 @@ class EGroup {
         return resolver;
     }
     
-    static getGroups(colDef : ColumnDefs ,fn: createRowFn, agFn: aggregateFn): EGroup[] {
-        let g: EGroup[] = [];
-        for (let i=0; i< colDef.getColumnsCount(); i++) {
-            if (colDef.isGrouped(i)) {
-                let resolver = EGroup.getResolver(colDef.getColumnKeyValue(i, 'group'));
-                g.push(new EGroup(i, colDef, fn, agFn, resolver));
-            }
-        }
-        return g;
-    }
-
-    private enrichRaw(groupRows: GroupedRow[], raw : any, layer:number) : void {
-        const colField = this.colDef.getFieldName(this.colIndex);
-        const groupKey = this.hashKey(raw[colField]);
-        let grpI = groupRows.map(g => g.key).indexOf(groupKey);
+    private enrichRaw(  rows: GroupedRow[],
+                        groupOption: EGroupOption,
+                        raw : any) : void {
+        const colField  = groupOption.field;
+        const groupKey  = EGroup.hashKey(groupOption, raw[colField]);
+        const layer     = groupOption.layer;
+        let grpI = rows.map(r => r.key).indexOf(groupKey);
         if (grpI >= 0) {
-            groupRows[grpI].raws.push(raw);
+            rows[grpI].raws.push(raw);
         } else {
-            groupRows.push({    'key': groupKey, 'raws': [raw], 'expanded': false,
+            rows.push({    'key': groupKey, 'raws': [raw], 'expanded': false,
                                 'aggregationVals':[], 'childGroups': [], 'layer': layer });
         }
     }
@@ -86,7 +101,6 @@ class EGroup {
         }
         return next;
     }
-
 
     private setRowCollapseState(currentTr: HTMLTableRowElement, isExpanded: boolean) {
         if (isExpanded) {
@@ -115,8 +129,7 @@ class EGroup {
             group.childGroups.forEach(g => {
                 this.setGroupRowsCollapsed(g, currentTr, true);
                 this.setRowCollapseState(currentTr, group.expanded);
-                currentTr = this.getNextTrIndex(g.raws.length, currentTr);
-                
+                currentTr = this.getNextTrIndex(g.raws.length, currentTr);  
             });
         }
     }
@@ -127,26 +140,35 @@ class EGroup {
         group.expanded = !group.expanded;
         this.setGroupRowsCollapsed(group, currentRow);
     }
-
-    private createParentRow(group: GroupedRow, isTop = true): HTMLTableRowElement {
-        console.log("  -------> parent row", group.layer);
+    
+    private createParentRow(groupOption: EGroupOption, group: GroupedRow): HTMLTableRowElement {
         group.aggregationVals = this.aggregator(group.raws);
-        let egroup = EGroup.getGroups(this.colDef, this.rowCreator, this.aggregator)[group.layer];
-        let tr  = this.rowCreator(group.raws[0]);
+        const isTop = group.layer == 0;
+        const colIndex = this.colDef.getFields()
+                                    .findIndex(f => f === groupOption.field);
+        const groupBy = groupOption.groupBy;
+        let tr : HTMLTableRowElement;
+        if (group.raws.length > 0) {
+            tr  = this.rowCreator(group.raws[0]);
+        } else if (group.childGroups.length > 0) {
+            tr = this.rowCreator(group.childGroups[0].raws[0]);
+        } else {
+            throw `cannot create row for ${group}`;
+        }
+        
         Array.from(tr.cells)?.forEach((c,i) => {
-            if (i != egroup.colIndex) {
+            if (i != colIndex) {
                 c.innerText = "";
             }
         });
-
-        tr.cells[this.colIndex].innerHTML = this.keyResolver(tr.cells[this.colIndex].innerHTML);
+        tr.cells[colIndex].innerHTML = groupBy(tr.cells[colIndex].innerHTML);
         let i   = document.createElement('i');
         i.classList.add('fa');
         i.classList.add('fa-angle-down');
         i.classList.add('mr-2');
         tr.cells[0].prepend(i);
         tr.classList.add(EGroup.getLayeredParentClass(group));
-        if (isTop) {
+        if (groupOption.layer == 0) {
             tr.classList.add(EGroup.PARENT_CLASS_NAME);
         } else {
             tr.classList.add(EGroup.PARENT_CLASS_NAME_CHILD);
@@ -175,50 +197,82 @@ class EGroup {
         return rows;
     }
 
-    createGroupedRowsLayered(group: GroupedRow) : HTMLTableRowElement[]{
+    createGroupedRowsLayered(go: EGroupOption, group: GroupedRow) : HTMLTableRowElement[]{
         let grouped : HTMLTableRowElement[] = [];
-        grouped.push(this.createParentRow(group));
+        grouped.push(this.createParentRow(go, group));
         group.childGroups.forEach(g => {
-            let childs = this.createGroupedRows(g);
+            let childs = this.createGroupedRows(go, g);
             grouped = grouped.concat(childs);
         });
         return grouped;
     }
 
-    createGroupedRows(group: GroupedRow): HTMLTableRowElement[] {
-        let grouped : HTMLTableRowElement[] = [];
-        const isTop = group.layer == 0;
-        grouped.push(this.createParentRow(group, isTop));
+    
+    private createGroupedRows(go: EGroupOption, group: GroupedRow): HTMLTableRowElement[] {
+        const parentRow = this.createParentRow(go, group);
+        let grouped = [parentRow];
         grouped = grouped.concat(this.createChildRows(group));
         return grouped;
     }
 
-	group0(raws:any[], filters: EFilter[], layer = 0): GroupedRow[] {
-        let groupRows: GroupedRow[] = [];
-        
+
+
+    FirstGroup(go: EGroupOption, raws:any[], filters: EFilter[]) {
+        let groupRows: GroupedRow[] = [];    
         raws.forEach(raw => {
             if (EFilter.filterRow(raw, filters)) {
-                this.enrichRaw(groupRows, raw, layer);
+                this.enrichRaw(groupRows, go, raw);
             } 
         });
         return groupRows;
-	}	
+    }
 
-    group1(grouped0:GroupedRow[]): GroupedRow[] {
-		const colDefs = this.colDef;
-        const colIndex = this.colIndex;
-        let groupRows: GroupedRow[] = [];
-        let parentGroups: GroupedRow[] = [];
-        grouped0.forEach(grouped => {
-            groupRows = this.group0(grouped.raws, [], 1);
-            grouped.childGroups = groupRows;
-            groupRows = [];
-            parentGroups.push(grouped);
+    createTableRows(layer: GroupedRow[]): HTMLTableRowElement[] {
+        let rows: HTMLTableRowElement[] = [];
+        layer.forEach(g => {
+            let assocGo = this.groupOptions[g.layer];
+            let newRows: HTMLTableRowElement[] = [];
+            if (g.childGroups.length > 0) {                
+                let newRows = [this.createParentRow(assocGo, g)];
+                rows = rows.concat(newRows.concat(this.createTableRows(g.childGroups)));
+            } else {
+                //lowest level in current group
+                rows = rows.concat(this.createGroupedRows(assocGo, g));
+            }
         });
-        return parentGroups;
+        console.log(rows);
+        return rows;
+    }
+
+    processGrouped(go: EGroupOption, group: GroupedRow) {
+        let groupRows = this.FirstGroup(go, group.raws, []);
+        group.childGroups = groupRows;
+        //group.raws = [];
+    }
+
+    groupAll(raw: any[], filters: EFilter[] = []): GroupedRow[] {
+		const colDefs   = this.colDef;
+        const grOpt     = this.groupOptions;
+        let layer0: GroupedRow[] = [];
+        let nextLayer: GroupedRow[] = layer0;
+        
+        grOpt.forEach((go, i) => {
+            if (i == 0) {
+                layer0 = this.FirstGroup(go, raw, filters);
+                nextLayer = layer0;
+            } else {
+                nextLayer.forEach(g => this.processGrouped(go, g));
+                let currentLayer = layer0;
+                for (let j=0; j<i; j++) {
+                    currentLayer = currentLayer.flatMap(g => g.childGroups);
+                }
+                nextLayer = currentLayer;
+            }
+        });
+        return layer0;
 	}
     
 }
 
-export {GroupedRow};
+export {GroupedRow, EGroupOption};
 export default EGroup;
