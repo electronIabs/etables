@@ -1,12 +1,13 @@
 import ColumnDefs from "./ColumnDefs.js";
+import { GroupedRow } from "./EGroup.js";
 
+type AggregatorFn = (r:number, v:number, i:number, rowCount:number) => number;
 
-
-const sum = (result: number, value: number, i: number, rowCount: number) => i==0? value : result + value;
-const avg = (result: number, value: number, i: number, rowCount: number) => i==0? value/rowCount : result += value/rowCount;
-const min = (result: number, value: number, i: number, rowCount: number) => i==0? value:(result>value?value:result);
-const max = (result: number, value: number, i: number, rowCount: number) => i==0? value:(result<value?value:result);
-
+const sum 		: AggregatorFn = (result, value, i, rowCount) => i==0? value : result + value;
+const avg 		: AggregatorFn = (result, value, i, rowCount) => i==0? value/rowCount : result += value/rowCount;
+const min 		: AggregatorFn = (result, value, i, rowCount) => i==0? value:(result>value?value:result);
+const max 		: AggregatorFn = (result, value, i, rowCount) => i==0? value:(result<value?value:result);
+const count		: AggregatorFn = (result, value, i, rowCount) => rowCount;
 
 class TableAggregator {
 
@@ -16,47 +17,71 @@ class TableAggregator {
 		this.#colDefs = colDefs;
 	}
 
-	private getAggregate(str: string) {
-		switch(str.toLowerCase()) {
-			case 'sum':
-				return sum;
-			case 'avg':
-				return avg;
-			case 'min':
-				return min;
-			case 'max':
-				return max;
+	private getAggregate(obj: any) {
+		if (typeof(obj) === 'string') {
+			switch(obj.toLowerCase()) {
+				case 'sum':
+					return sum;
+				case 'avg':
+					return avg;
+				case 'min':
+					return min;
+				case 'max':
+					return max;
+				case 'count':
+					return count;
+			}
+		} else if (typeof(obj) === 'function') {
+			return obj;
 		}
-		throw `aggregation not found ${str}`;
+		throw `aggregation not found ${obj}`;
 	}
 
-	aggregate(table: any): any[] {
+	aggregate(raw: any[]): any[] {
 		const colDefs = this.#colDefs;
 		let vals: any[] = [];
-		// @ts-ignore
-		const rows = Array.from(table.tBodies).flatMap(tbody => Array.from(tbody.rows));
+		//const rows = Array.from(table.tBodies).flatMap(tbody => Array.from(tbody.rows));
 		for (let i=0; i<colDefs.getColumnsCount(); i++) {
-			const aggregateableCol = colDefs.isAggregatable(i);
-			if (aggregateableCol !== false) {
-				let aggregate = colDefs.getColumnField(i, 'aggregate'); 
-				let agr = 'function';
-				if (typeof(aggregate) == 'string') {
-					agr = aggregate;
-					aggregate = this.getAggregate(aggregate);
-				}
+			if (colDefs.isAggregatable(i)) {
+				const colField 		= colDefs.getFieldName(i);
+				const aggregateObj 	= colDefs.getColumnKeyValue(i, 'aggregate'); 
+				const aggregateFn 	= this.getAggregate(aggregateObj);
 				vals[i] = 0.0;
-				rows.forEach((row: any,j: number) => {
-					const cellVal = parseFloat(row.cells[i].innerHTML);
+				raw.forEach((row: any,j: number) => {
+					const cellVal = parseFloat(row[colField]);
 					if (typeof cellVal === 'number' && isFinite(cellVal)) {
-						vals[i] = aggregate(vals[i], cellVal, j,rows.length);
+						console.log(vals);
+						vals[i] = aggregateFn(vals[i], cellVal, j,raw.length);
 					}
 				});
+				
 			}else{
 				vals[i] = '';
 			}
 		}
 		return vals;
-	}	
+	}
+
+	aggregateGroup(aggregatedRows : any[]): any[] {
+		const colDefs = this.#colDefs;
+		let vals: any[] = [];
+		for (let i=0; i<colDefs.getColumnsCount(); i++) {
+			if (colDefs.isAggregatable(i)) {
+				const aggregateObj 	= colDefs.getColumnKeyValue(i, 'aggregate'); 
+				const aggregateFn 	= this.getAggregate(aggregateObj);
+				vals[i] = 0.0;
+				aggregatedRows.forEach((row: HTMLTableRowElement, j: number) => {
+					const cellVal = parseFloat(row.cells[i].innerHTML);
+					if (isFinite(cellVal)) {
+						vals[i] = aggregateFn(vals[i], cellVal, j,aggregatedRows.length);
+					}
+				});
+			} else {
+				vals[i] = '';
+			}
+		}	
+		return vals;
+	}
 }
 
 export default TableAggregator;

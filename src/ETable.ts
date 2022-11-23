@@ -1,7 +1,9 @@
-import createTd from './modules/tdGen.js';
+import createTd from './modules/utils.js';
 import ColumnDefs, {columndef} from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
 import EFilter from './modules/EFilter.js';
+import EGroup, {GroupedRow} from './modules/EGroup.js';
+
 
 /**
  * example ColumnDefs: def = [{'name': 'description', 'field':'dsc', ...},
@@ -11,27 +13,32 @@ import EFilter from './modules/EFilter.js';
 const TABLE_CLASS			= "e-table";
 
 class ETable {
-	#table_class	: 	string				= TABLE_CLASS;
-	#table_raw_data	: 	any[]				= [];
-    #colDefs		: 	ColumnDefs;
-	#aggregator		: 	TableAggregator;
-	private filters :	EFilter[];
-	private table	: 	HTMLTableElement;
+	#table_class			: 	string					= TABLE_CLASS;
+	private raws			: 	any[]					= [];
+    private colDefs			: 	ColumnDefs;
+	private aggregator		: 	TableAggregator;
+	private filters 		:	EFilter[];
+	private groups			:	EGroup[];
+	groupRows				: 	any[];
+	private table			: 	HTMLTableElement;
+
 
 	constructor(header_cols: columndef[]) {
-		if (!Array.isArray(header_cols)) { throw 'header is not an array'; }
-	    this.#colDefs = new ColumnDefs(header_cols);
-		this.#aggregator = new TableAggregator(this.#colDefs);
+	    this.colDefs = new ColumnDefs(header_cols);
+		this.aggregator = new TableAggregator(this.colDefs);
 		this.filters = [];
+		this.groupRows = [];
+		this.groups = EGroup.getGroups(this.colDefs, d => this.createRow(d),
+													r => this.aggregator.aggregate(r));
 		this.table 		= document.createElement('table');
+		this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
 		this.table.classList.add(this.#table_class)
-		
 	}
 
 	appendFilter(i: number, text: string[], exact: boolean): void {
 		let init	: EFilter[] = [];
 		this.filters = this.filters.reduce((p,c) => (c.getFilterColumnIndex() != i && p.push(c),p),init);
-		let filter 	= new EFilter(this.#colDefs, i, text, exact);
+		let filter 	= new EFilter(this.colDefs, i, text, exact);
 		this.filters.push(filter);
 	}
 
@@ -40,10 +47,9 @@ class ETable {
 	}
 
 	
-
-	private createRowFromObject(rowData: Object) {
+	private createRowFromObject(rowData: Object, colDef : ColumnDefs) {
 		let tr = document.createElement('tr');
-		let max_cols = this.#colDefs.getColumnsCount();
+		let max_cols = colDef.getColumnsCount();
 		let i = 0;
 		if (typeof rowData === "object" && rowData !== null) {
 			for (const [key, value] of Object.entries(rowData)) {
@@ -58,39 +64,33 @@ class ETable {
 		}
 	}
 
-	private createRowFromArray(rowData: any[]) {
+
+	private createRowFromArray(rowData: any[], colDef : ColumnDefs) {
 		let tr = document.createElement('tr');
-		if (Array.isArray(rowData)) {
-			let i = 0;
-			rowData.forEach(element => {
-				tr.appendChild(createTd(element));
-				if (++i > this.#colDefs.getColumnsCount()) { return; }
-			});
-			return tr;
-		} else {
-			throw 'cant create row from non array';
-		}
+		let i = 0;
+		rowData.forEach(element => {
+			tr.appendChild(createTd(element));
+			if (++i > colDef.getColumnsCount()) { return; }
+		});
+		return tr;
 	}
 
 	setRows(rows: object[]) {
-		if (!Array.isArray(rows)) {
-			throw 'setRows called with non array';
-		}
-		this.#table_raw_data = rows;
+		this.raws = rows;
 	}
 
-	addRow(rowData: any) {
-		this.#table_raw_data.push(rowData);
+	addRow(rowData: Object) {
+		this.raws.push(rowData);
 	}
 
-	private createRow(data: any) {
-		let tr: Element;
+	private createRow(data: any): HTMLTableRowElement {
+		let tr: HTMLTableRowElement;
 		if (Array.isArray(data)) {
-			tr = this.createRowFromArray(data);
-		} else if (this.#colDefs.getFields().length > 0) {
-			tr = this.#colDefs.createRowFromFields(data);
+			tr = this.createRowFromArray(data, this.colDefs);
+		} else if (this.colDefs.getFields().length > 0) {
+			tr = this.colDefs.createRowFromFields(data);
 		} else if (typeof data === 'object') {
-			tr = this.createRowFromObject(data);
+			tr = this.createRowFromObject(data, this.colDefs);
 		} else {
 			tr = document.createElement('tr');
 			tr.appendChild(createTd(data));
@@ -99,32 +99,37 @@ class ETable {
 	}
 
 	getRawData() {
-		return this.#table_raw_data;
+		return this.raws;
 	}
 
+	
 	private createHeader() {
 		let theader = document.createElement('thead');
-		let cols = this.#colDefs.getNames();
+		let cols = this.colDefs.getNames();
 		let tr = this.createRow(cols);
-		for (const [i,v] of cols.entries()) {
-			
-			if (this.#colDefs.isFilterable(i)) {
-				//let btn = EFilter.createFilterButton();
-				//tr.cells[i]?.appendChild(btn);
-			}
-		}
 		theader.appendChild(tr);
 		return theader;
 	}
 
-	private createFooter(table: any) {
+	private createFooterGrouped(groups: HTMLTableRowElement[]) {
+		let rows = groups.filter(tr => tr.classList.contains("group-parent"));
 		let tfoot 		= document.createElement('tfoot');
-		let data:any	= this.#aggregator.aggregate(table);
+		let data:any[]	= this.aggregator.aggregateGroup(rows);
 		let row:any		= this.createRow(data);
 	    tfoot.appendChild(row);	
 		return tfoot;
 	}
-    
+
+	private createFooter(raws : any[]) {
+		let tfoot 		= document.createElement('tfoot');
+		let data:any[]	= this.aggregator.aggregate(raws);
+		let row:any		= this.createRow(data);
+	    tfoot.appendChild(row);	
+		return tfoot;
+	}
+
+
+	
 	render(): HTMLTableElement {
 		Array.from(this.table.getElementsByTagName("thead")).forEach(b => b.remove());
 		Array.from(this.table.getElementsByTagName("tbody")).forEach(b => b.remove());
@@ -132,19 +137,42 @@ class ETable {
 
 		//header
 		this.table.appendChild(this.createHeader());
-		EFilter.createFilterButtons(this.table, this, this.#colDefs);
+		EFilter.createFilterButtons(this.table, this, this.colDefs);
+
 		//body
 		let tbody = document.createElement('tbody');
-		this.#table_raw_data.forEach( rowData => {
-			let tr:any = this.createRow(rowData);
-			if (EFilter.filterRow(tr, this.filters)) {
-				tbody.appendChild(tr);
-			}	
-		});
-		
+		let rows: HTMLTableRowElement[] = [];
+		let filteredRaws: any[] = [];
+
+		if (this.groups.length > 1) {
+			let group0 = this.groups[0].group0(this.getRawData(), this.filters);
+			let group1 = this.groups[1].group1(group0);
+			rows = group1.flatMap(g => {
+				const i = g.childGroups.length > 0 ? 1:0;
+				return this.groups[i].createGroupedRowsLayered(g);
+			});
+		} else if (this.groups.length > 0) {
+			let group0 = this.groups[0].group0(this.getRawData(), this.filters);
+			rows = group0.flatMap(g => this.groups[0].createGroupedRows(g));
+		} else {
+			this.getRawData().forEach(raw => {
+				if (EFilter.filterRow(raw, this.filters)) {
+					rows.push(this.createRow(raw));
+					filteredRaws.push(raw);
+				} 
+			});
+		}
+		rows.forEach(tr => tbody.appendChild(tr));
 		this.table.appendChild(tbody);
+
+
 		//footer
-		this.table.appendChild(this.createFooter(this.table));
+		if (this.groups.length > 0) {
+			this.table.appendChild(this.createFooterGrouped(rows));
+		} else {
+			this.table.appendChild(this.createFooter(filteredRaws));
+		}
+		
 		return this.table;
 	}
 

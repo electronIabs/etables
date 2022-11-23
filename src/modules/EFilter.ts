@@ -10,10 +10,12 @@ class EFilter {
     private text        : string[]          = [];
     private isExact                         = false;
     private colIndex    : number;
-    #colField                               = "";
+    private colField    : string;
+    static readonly FilterBoxClass                 = "etable-filterBox";
+    static readonly FilterButtonClass              = "filterBtn";
 
     constructor(ColumnDefs: ColumnDefs, colIndex: number, text: string[], isExact: boolean = true) {
-        this.#colField  = ColumnDefs.getColumnField(colIndex, 'field');
+        this.colField   = ColumnDefs.getFieldName(colIndex);
         this.colIndex   = colIndex;
         this.#colDefs   = ColumnDefs;
         this.text       = text;
@@ -24,12 +26,12 @@ class EFilter {
         return this.colIndex;
     }
 
-    private applyExact(row: any): boolean {
-        return this.text.includes(row.cells[this.colIndex].innerHTML);
+    private applyExact(raw: any): boolean {
+        return this.text.includes(raw[this.colField]);
     }
 
-    private applyContains(row: any): boolean {
-        return this.text.filter(v => row.cells[this.colIndex].innerHTML.includes(v)).length != 0;
+    private applyContains(raw: any): boolean {
+        return this.text.filter(v => raw[this.colField].includes(v)).length != 0;
     }
 
     private applyFilter(row: any): boolean {
@@ -43,10 +45,10 @@ class EFilter {
         }
     }
 
-    static filterRow(tr: any, filters: EFilter[]) {
+    static filterRow(raw: any, filters: EFilter[]) {
         let result = true;
         filters.forEach(filter => {
-            result = result && filter.applyFilter(tr);
+            result = result && filter.applyFilter(raw);
         });
         return result;
     }
@@ -60,10 +62,19 @@ class EFilter {
         box.style.top = `${rect.bottom}px`;
     }
 
+    static tableClickEvent(table: HTMLTableElement, e: MouseEvent) {
+        if ((<HTMLElement>e.target).tagName !== "TD") {
+            return;
+        }
+        let oldbox = table.getElementsByClassName("etable-filterBox")[0];
+        oldbox?.remove();
+    }
+
+    
 	static createFilterButtons(table: HTMLTableElement, etable: ETable, colDefs: ColumnDefs) {
-        
         for (let i = 0; i<colDefs.getColumnsCount(); i++) {
             if (colDefs.isFilterable(i)) {
+                const currentField = colDefs.getFieldName(i);
                 let headerRow = table.getElementsByTagName('thead')[0]?.rows[0];
 
                 let filterBtn = document.createElement("button");
@@ -71,16 +82,24 @@ class EFilter {
                 filterBtn.classList.add("filterBtn");
                 filterBtn.classList.add("ebtn");
                 filterBtn.classList.add("fa");
-                filterBtn.classList.add("fa-ellipsis");                
+                filterBtn.classList.add("fa-ellipsis-vertical");                
                 filterBtn.addEventListener('click', e => {
-                    document.getElementsByClassName("etable-filterBox")[0]?.remove();
+                    let oldbox = document.getElementsByClassName("etable-filterBox")[0];
+                    if (oldbox != null) {
+                        const oldBoxField = CheckFilterBox.getBoxColumnField(<HTMLDivElement>oldbox);
+                        oldbox.remove();
+                        if (oldBoxField === currentField) {
+                            return;
+                        }
+                    }
+
                     let filterBox = new CheckFilterBox(etable, i);
-                    let box = filterBox.createFilterBox(colDefs.getColumnField(i, 'field'));
+                    let box = filterBox.createFilterBox(currentField);
                     // @ts-ignore
                     const rect = e.target?.getBoundingClientRect();
                     EFilter.positionBox(rect, box);
-                    document.body.appendChild(box);
-                })
+                    table.appendChild(box);
+                });
                 headerRow.cells[i].appendChild(filterBtn);
             }
         }

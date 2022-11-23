@@ -30,7 +30,8 @@ class CheckFilterBox extends FilterBox {
     }
     SearchBoxKeyupEvent(_this, e) {
         var _a;
-        _this.filterBoxOptions((_a = e.target) === null || _a === void 0 ? void 0 : _a.value);
+        const str = (_a = e.currentTarget) === null || _a === void 0 ? void 0 : _a.value;
+        _this.filterBoxOptions(str.toLowerCase());
     }
     static createDivCheckBox(data) {
         let div = document.createElement("div");

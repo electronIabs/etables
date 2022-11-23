@@ -1,4 +1,4 @@
-import createTd from './tdGen.js';
+import createTd from './utils.js';
 
 export interface columndef {
 	name			: string,
@@ -21,8 +21,16 @@ class ColumnDefs {
 		this.#col_defs.push(def);
 	}
 
+	getNames() {
+		return this.#col_defs.map( e => e['name'] );
+	}
+	
 	getFields() {
 		return this.#col_defs.filter(c => c.hasOwnProperty('field'));
+	}
+
+	getFieldName(index: number): string {
+		return this.#col_defs[index]['field'];
 	}
 
 	createRowFromFields(rowData: any) {
@@ -38,9 +46,16 @@ class ColumnDefs {
 		return this.#col_defs.length;
 	}
 
-	getColumnField(index: number, field: string): any {
+	getColumnKeyValue(index: number, key: string): any {
 		//@ts-ignore
-		return this.#col_defs[index][field];
+		return this.#col_defs[index][key];
+	}
+
+	isGrouped(index: number) {
+		if (Object.keys(this.#col_defs[index]).includes('group')) {
+			return true;
+		}
+		return false;
 	}
 
 	isAggregatable(index: number) {
@@ -59,10 +74,6 @@ class ColumnDefs {
 
 	getName(index: number) {
 		return this.#col_defs[index]['name']
-	}
-
-	getNames() {
-		return this.#col_defs.map( e => e['name'] );
 	}
 }
 

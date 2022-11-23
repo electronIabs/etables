@@ -37,9 +37,9 @@ class CheckFilterBox extends FilterBox {
         return result;
     }
     
-    SearchBoxKeyupEvent(_this: CheckFilterBox, e: KeyboardEvent): void {
-        //@ts-ignore
-        _this.filterBoxOptions(e.target?.value);
+    SearchBoxKeyupEvent(_this: CheckFilterBox, e: any): void {
+        const str = e.currentTarget?.value;
+        _this.filterBoxOptions(str.toLowerCase());
     }
 
 

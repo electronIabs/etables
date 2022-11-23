@@ -9,9 +9,13 @@ export class FilterBox {
         search.setAttribute("placeholder", "search...");
         return search;
     }
+    static getBoxColumnField(box) {
+        return box.getAttribute(FilterBox.BOX_COL_FIELD);
+    }
     createFilterBox(colField) {
         let uniqueData = [...new Set(this.etable.getRawData().map(r => r[colField]))];
         this.box.classList.add("etable-filterBox");
+        this.box.setAttribute(FilterBox.BOX_COL_FIELD, colField);
         let header = document.createElement("div");
         let searchBox = FilterBox.createSearchBox();
         let applyBtn = document.createElement("button");
@@ -28,3 +32,4 @@ export class FilterBox {
         return this.box;
     }
 }
+FilterBox.BOX_COL_FIELD = "column_field";
