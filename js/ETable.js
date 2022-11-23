@@ -1,10 +1,9 @@
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, privateMap) {
-    if (!privateMap.has(receiver)) {
-        throw new TypeError("attempted to get private field on non-instance");
-    }
-    return privateMap.get(receiver);
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _table_class;
+var _ETable_table_class;
 import createTd from './modules/utils.js';
 import ColumnDefs from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
@@ -12,17 +11,23 @@ import EFilter from './modules/EFilter.js';
 import EGroup from './modules/EGroup.js';
 const TABLE_CLASS = "e-table";
 class ETable {
-    constructor(header_cols) {
-        _table_class.set(this, TABLE_CLASS);
+    constructor(header_cols, GroupOptions = []) {
+        _ETable_table_class.set(this, TABLE_CLASS);
         this.raws = [];
         this.colDefs = new ColumnDefs(header_cols);
         this.aggregator = new TableAggregator(this.colDefs);
         this.filters = [];
-        this.groupRows = [];
-        this.groups = EGroup.getGroups(this.colDefs, d => this.createRow(d), r => this.aggregator.aggregate(r));
+        this.gOptions = GroupOptions.length;
+        this.egroup = new EGroup(GroupOptions, this.colDefs, d => this.createRow(d), r => this.aggregator.aggregate(r));
         this.table = document.createElement('table');
         this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
-        this.table.classList.add(__classPrivateFieldGet(this, _table_class));
+        this.table.classList.add(__classPrivateFieldGet(this, _ETable_table_class, "f"));
+    }
+    static createGroupingOption(field, groupBy) {
+        if (['string', 'function'].includes(typeof (groupBy))) {
+            return { field: field, layer: 0, groupBy: groupBy };
+        }
+        throw 'provided groupBy is not supported';
     }
     appendFilter(i, text, exact) {
         let init = [];
@@ -97,16 +102,9 @@ class ETable {
         return theader;
     }
     createFooterGrouped(groups) {
-        let rows = groups.filter(tr => tr.classList.contains("group-parent"));
+        let rows = groups.filter(tr => !['group-parent-child', 'group-parent'].some(r => tr.classList.contains(r)));
         let tfoot = document.createElement('tfoot');
         let data = this.aggregator.aggregateGroup(rows);
-        let row = this.createRow(data);
-        tfoot.appendChild(row);
-        return tfoot;
-    }
-    createFooter(raws) {
-        let tfoot = document.createElement('tfoot');
-        let data = this.aggregator.aggregate(raws);
         let row = this.createRow(data);
         tfoot.appendChild(row);
         return tfoot;
@@ -120,17 +118,9 @@ class ETable {
         let tbody = document.createElement('tbody');
         let rows = [];
         let filteredRaws = [];
-        if (this.groups.length > 1) {
-            let group0 = this.groups[0].group0(this.getRawData(), this.filters);
-            let group1 = this.groups[1].group1(group0);
-            rows = group1.flatMap(g => {
-                const i = g.childGroups.length > 0 ? 1 : 0;
-                return this.groups[i].createGroupedRowsLayered(g);
-            });
-        }
-        else if (this.groups.length > 0) {
-            let group0 = this.groups[0].group0(this.getRawData(), this.filters);
-            rows = group0.flatMap(g => this.groups[0].createGroupedRows(g));
+        if (this.gOptions > 0) {
+            let groups = this.egroup.groupAll(this.getRawData(), this.filters);
+            rows = this.egroup.createTableRows(groups);
         }
         else {
             this.getRawData().forEach(raw => {
@@ -142,14 +132,9 @@ class ETable {
         }
         rows.forEach(tr => tbody.appendChild(tr));
         this.table.appendChild(tbody);
-        if (this.groups.length > 0) {
-            this.table.appendChild(this.createFooterGrouped(rows));
-        }
-        else {
-            this.table.appendChild(this.createFooter(filteredRaws));
-        }
+        this.table.appendChild(this.createFooterGrouped(rows));
         return this.table;
     }
 }
-_table_class = new WeakMap();
+_ETable_table_class = new WeakMap();
 export default ETable;

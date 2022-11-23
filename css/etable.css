@@ -62,8 +62,20 @@
     transition: all 0.35s;
 }
 
-.e-table tbody tr.group-parent-child {
-    background-color: var(--etable-light-gray);
+
+.e-table tbody tr.group-parent_1 td:first-of-type {
+    padding-left: 10px;
+}
+
+.e-table tbody tr.group-parent_2 td:first-of-type {
+    padding-left: 20px;
+}
+
+.e-table tbody tr.group-parent_3 td:first-of-type {
+    padding-left: 30px;
+}
+.e-table tbody tr.group-parent_4 td:first-of-type {
+    padding-left: 40px;
 }
 
 .e-table tbody tr.group-parent:hover,

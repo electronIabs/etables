@@ -9,7 +9,7 @@ export interface columndef {
 
 class ColumnDefs {
 	
-	#col_defs: columndef[]		= [];
+	private coldefs: columndef[]		= [];
 
 	constructor(col_def: columndef[]) {
 		if (Array.isArray(col_def)) {
@@ -18,24 +18,24 @@ class ColumnDefs {
 	}
 
 	_pushdef (def: any) {
-		this.#col_defs.push(def);
+		this.coldefs.push(def);
 	}
 
 	getNames() {
-		return this.#col_defs.map( e => e['name'] );
+		return this.coldefs.map( e => e['name'] );
 	}
 	
-	getFields() {
-		return this.#col_defs.filter(c => c.hasOwnProperty('field'));
+	getFields(): string[] {
+		return this.coldefs.map(c => c.field);
 	}
 
 	getFieldName(index: number): string {
-		return this.#col_defs[index]['field'];
+		return this.coldefs[index]['field'];
 	}
 
 	createRowFromFields(rowData: any) {
 		let tr = document.createElement('tr');
-		this.#col_defs.forEach(e => {
+		this.coldefs.forEach(e => {
 			let colKey = e['field'];
 			tr.appendChild(createTd(rowData[colKey]));
 		});
@@ -43,37 +43,37 @@ class ColumnDefs {
 	}
 
 	getColumnsCount() {
-		return this.#col_defs.length;
+		return this.coldefs.length;
 	}
 
 	getColumnKeyValue(index: number, key: string): any {
 		//@ts-ignore
-		return this.#col_defs[index][key];
+		return this.coldefs[index][key];
 	}
 
 	isGrouped(index: number) {
-		if (Object.keys(this.#col_defs[index]).includes('group')) {
+		if (Object.keys(this.coldefs[index]).includes('group')) {
 			return true;
 		}
 		return false;
 	}
 
 	isAggregatable(index: number) {
-		if (Object.keys(this.#col_defs[index]).includes('aggregate')) {
+		if (Object.keys(this.coldefs[index]).includes('aggregate')) {
 			return true;
 		}
 		return false;
 	}
 
 	isFilterable(index: number) {
-		if (Object.keys(this.#col_defs[index]).includes('filter')) {
+		if (Object.keys(this.coldefs[index]).includes('filter')) {
 			return true;
 		}
 		return false;
 	}
 
 	getName(index: number) {
-		return this.#col_defs[index]['name']
+		return this.coldefs[index]['name']
 	}
 }
 

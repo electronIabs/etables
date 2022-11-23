@@ -50,7 +50,6 @@ class TableAggregator {
 				raw.forEach((row: any,j: number) => {
 					const cellVal = parseFloat(row[colField]);
 					if (typeof cellVal === 'number' && isFinite(cellVal)) {
-						console.log(vals);
 						vals[i] = aggregateFn(vals[i], cellVal, j,raw.length);
 					}
 				});
