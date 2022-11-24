@@ -32,7 +32,144 @@ const decadeResolver        : KeyResolverFn         = (v) => {
 
 
 class EGroupTableConverter {
+    private static readonly PARENT_CLASS_NAME       = "group-parent";
+    private static readonly PARENT_CLASS_NAME_CHILD = "group-parent-child";
+    private static readonly COLLAPSED_CLASS_NAME    = "collapsed";
+    private static readonly getLayeredParentClass   = (g: GroupedRow) => EGroupTableConverter.PARENT_CLASS_NAME + "_" + g.layer;
     
+    private static colDef       : ColumnDefs;
+    private static rowCreator   : Function;
+    private static aggregator   : Function;
+
+
+    static setMandetory(colDef: ColumnDefs, rowCreator: Function, aggregator: Function) {
+        this.colDef = colDef;
+        this.rowCreator = rowCreator;
+        this.aggregator = aggregator;
+    }
+
+
+    private static getNextTrIndex(i: number, row: HTMLTableRowElement): HTMLTableRowElement{
+        let next = <HTMLTableRowElement>row.nextElementSibling;
+        for (let j=0; j<i; j++) {
+            next = <HTMLTableRowElement>next?.nextElementSibling;
+        }
+        return next;
+    }
+
+    private static setRowCollapseState(currentTr: HTMLTableRowElement, isExpanded: boolean) {
+        if (isExpanded) {
+            currentTr.classList.remove(EGroupTableConverter.COLLAPSED_CLASS_NAME);
+        } else {
+            currentTr.classList.add(EGroupTableConverter.COLLAPSED_CLASS_NAME);
+        }
+    }
+
+    private static setGroupRowsCollapsed(group: GroupedRow, currentTr: HTMLTableRowElement, isRecursive = false) {
+        if (group.childGroups.length == 0) {
+            //no group parents
+            if (!isRecursive) {
+                for (let i=0; i < group.raws.length; i++) {
+                    this.setRowCollapseState(currentTr, group.expanded);
+                    currentTr = <HTMLTableRowElement>currentTr?.nextElementSibling;
+                }
+            } else if (group.expanded) {
+                group.expanded = false;
+                for (let i=0; i < group.raws.length; i++) {
+                    currentTr = <HTMLTableRowElement>currentTr?.nextElementSibling;
+                    this.setRowCollapseState(currentTr, false);
+                }
+                //this.setRowCollapseState(currentTr, false);
+            }
+        } else {
+            //has child parents
+            group.childGroups.forEach(g => {
+                this.setGroupRowsCollapsed(g, currentTr, true);
+                this.setRowCollapseState(currentTr, group.expanded);
+                currentTr = this.getNextTrIndex(g.raws.length, currentTr);  
+                console.log("next", currentTr);
+            });
+        }
+    }
+
+    private static toggleChildRows(group: GroupedRow, td : HTMLTableCellElement): void {
+        let currentRow = <HTMLTableRowElement>td.parentElement?.nextElementSibling;
+        group.expanded = !group.expanded;
+        this.setGroupRowsCollapsed(group, currentRow);
+    }
+
+    /*
+    static createGroupedRowsLayered(go: EGroupOption, group: GroupedRow) : HTMLTableRowElement[]{
+        let grouped : HTMLTableRowElement[] = [];
+        grouped.push(EGroupTableConverter.createParentRow(go, group));
+        group.childGroups.forEach(g => {
+            let childs = EGroupTableConverter.createGroupedRows(go, g);
+            grouped = grouped.concat(childs);
+        });
+        return grouped;
+    }*/
+
+    static createParentRow(groupOption: EGroupOption, group: GroupedRow): HTMLTableRowElement {
+        const colIndex  = this.colDef.getFields().findIndex(f => f === groupOption.field);
+        group.aggregationVals   = this.aggregator(group.raws);
+        const groupBy   = groupOption.groupBy;
+        let tr : HTMLTableRowElement;
+        if (group.raws.length > 0) {
+            tr  = this.rowCreator(group.raws[0]);
+        } else if (group.childGroups.length > 0) {
+            tr  = this.rowCreator(group.childGroups[0].raws[0]);
+        } else {
+            throw `cannot create row for ${group}`;
+        }
+        
+        Array.from(tr.cells)?.forEach((c,i) => {
+            if (i != colIndex) {
+                c.innerText = "";
+            }
+        });
+        tr.cells[colIndex].innerHTML = groupBy(tr.cells[colIndex].innerHTML);
+        let i   = document.createElement('i');
+        i.classList.add('fa');
+        i.classList.add('fa-angle-down');
+        i.classList.add('mr-2');
+        tr.cells[0].prepend(i);
+        tr.classList.add(this.getLayeredParentClass(group));
+        if (groupOption.layer == 0) {
+            tr.classList.add(this.PARENT_CLASS_NAME);
+        } else {
+            tr.classList.add(this.PARENT_CLASS_NAME_CHILD);
+            tr.classList.add(this.COLLAPSED_CLASS_NAME);
+        }
+        tr.addEventListener('click', e => this.toggleChildRows(group, <HTMLTableCellElement>e.target));
+        group.aggregationVals.map((v:string,i:number) => {return {'value':v, 'i':i};})
+                                     .filter(v => v.value !== "")
+                                     .forEach( v => tr.cells[v.i].innerHTML = v.value);
+        return tr;
+    }
+
+
+    static createGroupedRows(go: EGroupOption, group: GroupedRow): HTMLTableRowElement[] {
+        const parentRow = EGroupTableConverter.createParentRow(go, group);
+        let grouped = [parentRow];
+        grouped = grouped.concat(EGroupTableConverter.createChildRows(group, this.rowCreator));
+        return grouped;
+    }
+    
+    private static createChildRows(group: GroupedRow, rowCreator: Function): HTMLTableRowElement[] {
+        let rows :HTMLTableRowElement[] = [];
+        let creator = (r:any) => rows.push(rowCreator(r));
+        if (!group.expanded) {
+            creator = (r:any) => {
+                let tr = rowCreator(r);
+                tr.classList.toggle(this.COLLAPSED_CLASS_NAME);
+                return rows.push(tr);
+            };
+        }
+
+        group.raws.forEach(r => creator(r));
+        return rows;
+    }
+
 }
 
 class EGroup {
@@ -40,13 +177,7 @@ class EGroup {
     private colDef                  : ColumnDefs;
     private rowCreator       : createRowFn;
     private aggregator       : aggregateFn;
-    
-    private static readonly PARENT_CLASS_NAME       = "group-parent";
-    private static readonly PARENT_CLASS_NAME_CHILD = "group-parent-child";
-    private static readonly COLLAPSED_CLASS_NAME    = "collapsed";
-    private static readonly getLayeredParentClass   = (g: GroupedRow) => EGroup.PARENT_CLASS_NAME + "_" + g.layer;
-    
-    
+
     constructor(groupOptions: EGroupOption[], colDef: ColumnDefs, 
                 crFn: createRowFn, 
                 agFn: aggregateFn) {
@@ -58,6 +189,7 @@ class EGroup {
         this.colDef         = colDef;
         this.rowCreator     = crFn;
         this.aggregator     = agFn;
+        EGroupTableConverter.setMandetory(this.colDef, this.rowCreator, this.aggregator);
     }
 
     private static hashKey(groupOptions: EGroupOption, v: string): string {
@@ -94,130 +226,8 @@ class EGroup {
         }
     }
 
-    private getNextTrIndex(i: number, row: HTMLTableRowElement): HTMLTableRowElement{
-        let next = <HTMLTableRowElement>row.nextElementSibling;
-        for (let j=0; j<i; j++) {
-            next = <HTMLTableRowElement>next?.nextElementSibling;
-        }
-        return next;
-    }
-
-    private setRowCollapseState(currentTr: HTMLTableRowElement, isExpanded: boolean) {
-        if (isExpanded) {
-            currentTr.classList.remove(EGroup.COLLAPSED_CLASS_NAME);
-        } else {
-            currentTr.classList.add(EGroup.COLLAPSED_CLASS_NAME);
-        }
-    }
-
-    private setGroupRowsCollapsed(group: GroupedRow, currentTr: HTMLTableRowElement, isRecursive = false) {
-        if (group.childGroups.length == 0) {
-            if (!isRecursive) {
-                for (let i=0; i < group.raws.length; i++) {
-                    this.setRowCollapseState(currentTr, group.expanded);
-                    currentTr = <HTMLTableRowElement>currentTr?.nextElementSibling;
-                }
-            } else if (group.expanded) {
-                group.expanded = false;
-                for (let i=0; i < group.raws.length; i++) {
-                    this.setRowCollapseState(currentTr, false);
-                    currentTr = <HTMLTableRowElement>currentTr?.nextElementSibling;
-                }
-                this.setRowCollapseState(currentTr, false);
-            }
-        } else {
-            group.childGroups.forEach(g => {
-                this.setGroupRowsCollapsed(g, currentTr, true);
-                this.setRowCollapseState(currentTr, group.expanded);
-                currentTr = this.getNextTrIndex(g.raws.length, currentTr);  
-            });
-        }
-    }
-
-    private toggleChildRows(group: GroupedRow, td : HTMLTableCellElement): void {
-        const breaker = EGroup.getLayeredParentClass(group);
-        let currentRow = <HTMLTableRowElement>td.parentElement?.nextElementSibling;
-        group.expanded = !group.expanded;
-        this.setGroupRowsCollapsed(group, currentRow);
-    }
     
-    private createParentRow(groupOption: EGroupOption, group: GroupedRow): HTMLTableRowElement {
-        group.aggregationVals = this.aggregator(group.raws);
-        const isTop = group.layer == 0;
-        const colIndex = this.colDef.getFields()
-                                    .findIndex(f => f === groupOption.field);
-        const groupBy = groupOption.groupBy;
-        let tr : HTMLTableRowElement;
-        if (group.raws.length > 0) {
-            tr  = this.rowCreator(group.raws[0]);
-        } else if (group.childGroups.length > 0) {
-            tr = this.rowCreator(group.childGroups[0].raws[0]);
-        } else {
-            throw `cannot create row for ${group}`;
-        }
-        
-        Array.from(tr.cells)?.forEach((c,i) => {
-            if (i != colIndex) {
-                c.innerText = "";
-            }
-        });
-        tr.cells[colIndex].innerHTML = groupBy(tr.cells[colIndex].innerHTML);
-        let i   = document.createElement('i');
-        i.classList.add('fa');
-        i.classList.add('fa-angle-down');
-        i.classList.add('mr-2');
-        tr.cells[0].prepend(i);
-        tr.classList.add(EGroup.getLayeredParentClass(group));
-        if (groupOption.layer == 0) {
-            tr.classList.add(EGroup.PARENT_CLASS_NAME);
-        } else {
-            tr.classList.add(EGroup.PARENT_CLASS_NAME_CHILD);
-            tr.classList.add(EGroup.COLLAPSED_CLASS_NAME);
-        }
-        tr.addEventListener('click', e => this.toggleChildRows(group, <HTMLTableCellElement>e.target));
-        group.aggregationVals.map((v:string,i:number) => {return {'value':v, 'i':i};})
-                                     .filter(v => v.value !== "")
-                                     .forEach( v => tr.cells[v.i].innerHTML = v.value);
-        return tr;
-    }
-
-    
-    private createChildRows(group: GroupedRow): HTMLTableRowElement[] {
-        let rows :HTMLTableRowElement[] = [];
-        let creator = (r:any) => rows.push(this.rowCreator(r));
-        if (!group.expanded) {
-            creator = (r:any) => {
-                let tr = this.rowCreator(r);
-                tr.classList.toggle(EGroup.COLLAPSED_CLASS_NAME);
-                return rows.push(tr);
-            };
-        }
-
-        group.raws.forEach(r => creator(r));
-        return rows;
-    }
-
-    createGroupedRowsLayered(go: EGroupOption, group: GroupedRow) : HTMLTableRowElement[]{
-        let grouped : HTMLTableRowElement[] = [];
-        grouped.push(this.createParentRow(go, group));
-        group.childGroups.forEach(g => {
-            let childs = this.createGroupedRows(go, g);
-            grouped = grouped.concat(childs);
-        });
-        return grouped;
-    }
-
-    
-    private createGroupedRows(go: EGroupOption, group: GroupedRow): HTMLTableRowElement[] {
-        const parentRow = this.createParentRow(go, group);
-        let grouped = [parentRow];
-        grouped = grouped.concat(this.createChildRows(group));
-        return grouped;
-    }
-
-
-
-    FirstGroup(go: EGroupOption, raws:any[], filters: EFilter[]) {
+    FirstGroup(go: EGroupOption, raws:any[], filters: EFilter[]): GroupedRow[] {
         let groupRows: GroupedRow[] = [];    
         raws.forEach(raw => {
             if (EFilter.filterRow(raw, filters)) {
@@ -227,20 +237,20 @@ class EGroup {
         return groupRows;
     }
 
+    
     createTableRows(layer: GroupedRow[]): HTMLTableRowElement[] {
         let rows: HTMLTableRowElement[] = [];
         layer.forEach(g => {
             let assocGo = this.groupOptions[g.layer];
             let newRows: HTMLTableRowElement[] = [];
             if (g.childGroups.length > 0) {                
-                let newRows = [this.createParentRow(assocGo, g)];
+                let newRows = [EGroupTableConverter.createParentRow(assocGo, g)];
                 rows = rows.concat(newRows.concat(this.createTableRows(g.childGroups)));
             } else {
                 //lowest level in current group
-                rows = rows.concat(this.createGroupedRows(assocGo, g));
+                rows = rows.concat(EGroupTableConverter.createGroupedRows(assocGo, g));
             }
         });
-        console.log(rows);
         return rows;
     }
 

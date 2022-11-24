@@ -1,19 +1,20 @@
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, privateMap, value) {
+    if (!privateMap.has(receiver)) {
+        throw new TypeError("attempted to set private field on non-instance");
+    }
+    privateMap.set(receiver, value);
+    return value;
 };
-var _EFilter_colDefs;
+var _colDefs;
 import CheckFilterBox from "./FilterCheckBox.js";
 class EFilter {
     constructor(ColumnDefs, colIndex, text, isExact = true) {
-        _EFilter_colDefs.set(this, void 0);
+        _colDefs.set(this, void 0);
         this.text = [];
         this.isExact = false;
         this.colField = ColumnDefs.getFieldName(colIndex);
         this.colIndex = colIndex;
-        __classPrivateFieldSet(this, _EFilter_colDefs, ColumnDefs, "f");
+        __classPrivateFieldSet(this, _colDefs, ColumnDefs);
         this.text = text;
         this.isExact = isExact;
     }
@@ -93,7 +94,7 @@ class EFilter {
         }
     }
 }
-_EFilter_colDefs = new WeakMap();
+_colDefs = new WeakMap();
 EFilter.FilterBoxClass = "etable-filterBox";
 EFilter.FilterButtonClass = "filterBtn";
 export default EFilter;

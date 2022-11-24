@@ -28,10 +28,13 @@
                                 {name:"amount", field:"amount", aggregate:"sum"},
                                 {name:"note", field:"note"}
                               ];
-            let groupOptions = [{field:'name', groupBy:'identity'},
-                                {field:'date', groupBy:'decade'},
-                                {field:'date', groupBy:'year'}];
-
+            console.log();
+            
+            let groupOptions = [    ETable.createGroupingOption('name', '1'),
+                                    ETable.createGroupingOption('date', 'decade'),
+                                    ETable.createGroupingOption('date', 'year')];
+            
+            
             let etable       = new ETable(cols, groupOptions);
             let container    = document.getElementsByClassName("container")[0];
             data.forEach(c => {

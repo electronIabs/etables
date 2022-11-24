@@ -37,6 +37,13 @@ class ETable {
 		this.table.classList.add(this.#table_class)
 	}
 
+	static createGroupingOption(field: string, groupBy: Function | string) {
+		if (['string', 'function'].includes(typeof(groupBy))) {
+			return {field: field, layer: 0, groupBy: groupBy};
+		}
+		throw 'provided groupBy is not supported';
+	}
+
 	appendFilter(i: number, text: string[], exact: boolean): void {
 		let init	: EFilter[] = [];
 		this.filters = this.filters.reduce((p,c) => (c.getFilterColumnIndex() != i && p.push(c),p),init);
@@ -114,7 +121,7 @@ class ETable {
 	}
 
 	private createFooterGrouped(groups: HTMLTableRowElement[]) {
-		let rows = groups.filter(tr => tr.classList.contains("group-parent"));
+		let rows = groups.filter(tr => !['group-parent-child', 'group-parent'].some(r=> tr.classList.contains(r)));
 		let tfoot 		= document.createElement('tfoot');
 		let data:any[]	= this.aggregator.aggregateGroup(rows);
 		let row:any		= this.createRow(data);
@@ -122,13 +129,7 @@ class ETable {
 		return tfoot;
 	}
 
-	private createFooter(raws : any[]) {
-		let tfoot 		= document.createElement('tfoot');
-		let data:any[]	= this.aggregator.aggregate(raws);
-		let row:any		= this.createRow(data);
-	    tfoot.appendChild(row);	
-		return tfoot;
-	}
+	
 
 
 	
@@ -147,10 +148,7 @@ class ETable {
 		let filteredRaws: any[] = [];
 		if (this.gOptions > 0) {
 			let groups = this.egroup.groupAll(this.getRawData(), this.filters);
-			console.log(groups);
-			let rows = this.egroup.createTableRows(groups);
-			console.log(rows);
-			rows.forEach(r => tbody.appendChild(r));
+			rows = this.egroup.createTableRows(groups);
 		} else {
 			this.getRawData().forEach(raw => {
 				if (EFilter.filterRow(raw, this.filters)) {
@@ -163,11 +161,7 @@ class ETable {
 		this.table.appendChild(tbody);
 
 		//footer
-		if (this.gOptions > 0) {
-			this.table.appendChild(this.createFooterGrouped(rows));
-		} else {
-			this.table.appendChild(this.createFooter(filteredRaws));
-		}
+		this.table.appendChild(this.createFooterGrouped(rows));
 		
 		return this.table;
 	}
