@@ -99,6 +99,27 @@ const data = [
         "type": "s"
     },
     {
+        "name":"admin test 1",
+        "date":"2024-01",
+        "amount": 45,
+        "note": "",
+        "type": "s"
+    },
+    {
+        "name":"admin test 1",
+        "date":"2025-01",
+        "amount": 45,
+        "note": "",
+        "type": "s"
+    },
+    {
+        "name":"admin test 1",
+        "date":"2026-01",
+        "amount": 45,
+        "note": "",
+        "type": "s"
+    },
+    {
         "name":"admin test 2",
         "date":"2022-01",
         "amount": 20,

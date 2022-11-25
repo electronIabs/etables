@@ -23,6 +23,12 @@ class ETable {
         this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
         this.table.classList.add(__classPrivateFieldGet(this, _ETable_table_class, "f"));
     }
+    static createGroupingOption(field, groupBy) {
+        if (['string', 'function'].includes(typeof (groupBy))) {
+            return { field: field, layer: 0, groupBy: groupBy };
+        }
+        throw 'provided groupBy is not supported';
+    }
     appendFilter(i, text, exact) {
         let init = [];
         this.filters = this.filters.reduce((p, c) => (c.getFilterColumnIndex() != i && p.push(c), p), init);
@@ -96,16 +102,9 @@ class ETable {
         return theader;
     }
     createFooterGrouped(groups) {
-        let rows = groups.filter(tr => tr.classList.contains("group-parent"));
+        let rows = groups.filter(tr => !['group-parent-child', 'group-parent'].some(r => tr.classList.contains(r)));
         let tfoot = document.createElement('tfoot');
         let data = this.aggregator.aggregateGroup(rows);
-        let row = this.createRow(data);
-        tfoot.appendChild(row);
-        return tfoot;
-    }
-    createFooter(raws) {
-        let tfoot = document.createElement('tfoot');
-        let data = this.aggregator.aggregate(raws);
         let row = this.createRow(data);
         tfoot.appendChild(row);
         return tfoot;
@@ -121,10 +120,7 @@ class ETable {
         let filteredRaws = [];
         if (this.gOptions > 0) {
             let groups = this.egroup.groupAll(this.getRawData(), this.filters);
-            console.log(groups);
-            let rows = this.egroup.createTableRows(groups);
-            console.log(rows);
-            rows.forEach(r => tbody.appendChild(r));
+            rows = this.egroup.createTableRows(groups);
         }
         else {
             this.getRawData().forEach(raw => {
@@ -136,12 +132,7 @@ class ETable {
         }
         rows.forEach(tr => tbody.appendChild(tr));
         this.table.appendChild(tbody);
-        if (this.gOptions > 0) {
-            this.table.appendChild(this.createFooterGrouped(rows));
-        }
-        else {
-            this.table.appendChild(this.createFooter(filteredRaws));
-        }
+        this.table.appendChild(this.createFooterGrouped(rows));
         return this.table;
     }
 }
