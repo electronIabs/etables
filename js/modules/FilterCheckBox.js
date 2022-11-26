@@ -1,6 +1,33 @@
 import { newUID } from "./utils.js";
 import { FilterBox } from "./FilterBox.js";
 class CheckFilterBox extends FilterBox {
+    constructor(etable, colIndex) {
+        super(etable, colIndex);
+        this.isExact = true;
+        this.text = [];
+    }
+    static createSearchBox() {
+        let search = document.createElement("input");
+        search.setAttribute("placeholder", "search...");
+        return search;
+    }
+    applyExact(raw, colField, _this) {
+        return _this.text.includes(raw[colField]);
+    }
+    applyContains(raw, colField, _this) {
+        return _this.text.filter(v => raw[colField].includes(v)).length != 0;
+    }
+    filterRaw(raw, colField, _this) {
+        if (_this.text.length == 0) {
+            return true;
+        }
+        if (_this.isExact) {
+            return (_this.applyExact(raw, colField, _this));
+        }
+        else {
+            return (_this.applyContains(raw, colField, _this));
+        }
+    }
     filterBoxOptions(text) {
         let array = Array.from(this.box.getElementsByClassName('body')[0].getElementsByTagName("label"));
         array.forEach(lbl => {
@@ -12,8 +39,21 @@ class CheckFilterBox extends FilterBox {
             }
         });
     }
+    createHeader() {
+        let header = document.createElement("div");
+        let searchBox = CheckFilterBox.createSearchBox();
+        let applyBtn = document.createElement("button");
+        applyBtn.innerText = "apply";
+        applyBtn.classList.add("ebtn");
+        applyBtn.addEventListener("click", e => this.applyFilter(this, e));
+        searchBox.addEventListener('keyup', e => this.SearchBoxKeyupEvent(this, e));
+        header.appendChild(searchBox);
+        header.appendChild(applyBtn);
+        return header;
+    }
     applyFilter(_this, e) {
-        _this.etable.appendFilter(_this.colIndex, _this.getCheckedOptions(), false);
+        _this.text = _this.getCheckedOptions();
+        _this.etable.appendFilter(_this.colIndex, (r, f) => this.filterRaw(r, f, this));
         _this.etable.render();
         _this.box.remove();
     }

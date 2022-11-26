@@ -1,54 +1,39 @@
 import ColumnDefs from "./ColumnDefs.js";
 import ETable from "../ETable.js";
 import CheckFilterBox from "./FilterCheckBox.js"; 
+import FilterBoxDate from "./FilterBoxDate.js"; 
+import { FilterBox } from "./FilterBox.js";
 
 // filters: equals, MoreThan, LessThan, contains
 // final_filter: composed of: and / or
 
+export type FilterRawFn = (row: any, colField: string) => boolean;
+
 class EFilter {
-    #colDefs            : ColumnDefs;
-    private text        : string[]          = [];
-    private isExact                         = false;
+    private colDef      : ColumnDefs;
+    private filterFn    : FilterRawFn;
     private colIndex    : number;
     private colField    : string;
     static readonly FilterBoxClass                 = "etable-filterBox";
     static readonly FilterButtonClass              = "filterBtn";
 
-    constructor(ColumnDefs: ColumnDefs, colIndex: number, text: string[], isExact: boolean = true) {
+    constructor(ColumnDefs: ColumnDefs, colIndex: number, filterFn: FilterRawFn) {
         this.colField   = ColumnDefs.getFieldName(colIndex);
         this.colIndex   = colIndex;
-        this.#colDefs   = ColumnDefs;
-        this.text       = text;
-        this.isExact    = isExact;
+        this.colDef     = ColumnDefs;
+        this.filterFn   = filterFn;
     }
 
     getFilterColumnIndex() : number {
         return this.colIndex;
     }
 
-    private applyExact(raw: any): boolean {
-        return this.text.includes(raw[this.colField]);
-    }
-
-    private applyContains(raw: any): boolean {
-        return this.text.filter(v => raw[this.colField].includes(v)).length != 0;
-    }
-
-    private applyFilter(row: any): boolean {
-        if (this.text.length == 0) {
-            return true;
-        }
-        if (this.isExact) {
-            return (this.applyExact(row));
-        } else {
-            return (this.applyContains(row));
-        }
-    }
 
     static filterRow(raw: any, filters: EFilter[]) {
         let result = true;
         filters.forEach(filter => {
-            result = result && filter.applyFilter(raw);
+            result = result && filter.filterFn(raw, filter.colField);
+            //result = result && filter.applyFilter(raw);
         });
         return result;
     }
@@ -75,6 +60,7 @@ class EFilter {
         for (let i = 0; i<colDefs.getColumnsCount(); i++) {
             if (colDefs.isFilterable(i)) {
                 const currentField = colDefs.getFieldName(i);
+                const filterBoxType = colDefs.getColumnKeyValue(i, 'type') === 'date'?FilterBoxDate:CheckFilterBox;
                 let headerRow = table.getElementsByTagName('thead')[0]?.rows[0];
 
                 let filterBtn = document.createElement("button");
@@ -86,14 +72,14 @@ class EFilter {
                 filterBtn.addEventListener('click', e => {
                     let oldbox = document.getElementsByClassName("etable-filterBox")[0];
                     if (oldbox != null) {
-                        const oldBoxField = CheckFilterBox.getBoxColumnField(<HTMLDivElement>oldbox);
+                        const oldBoxField = filterBoxType.getBoxColumnField(<HTMLDivElement>oldbox);
                         oldbox.remove();
                         if (oldBoxField === currentField) {
                             return;
                         }
                     }
 
-                    let filterBox = new CheckFilterBox(etable, i);
+                    let filterBox = new filterBoxType(etable, i);
                     let box = filterBox.createFilterBox(currentField);
                     // @ts-ignore
                     const rect = e.target?.getBoundingClientRect();

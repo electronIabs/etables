@@ -31,17 +31,15 @@
 
         function loadTable() {
             let cols        = [ {name:"sub name", field:"name", filter:true},
-                                {name:"date", field:"date", filter:true},
+                                {name:"date", field:"date", filter:true, type:'date'},
                                 {name:"amount", field:"amount", aggregate:"sum"},
                                 {name:"note", field:"note"}
                               ];
-            console.log();
-            
+
             let groupOptions = [    ETable.createGroupingOption('name', 'identity'),
                                     ETable.createGroupingOption('date', d=>everyNthYear(d,5))
                                 ];
             
-            console.log(groupOptions);
             let etable       = new ETable(cols, groupOptions);
             let container    = document.getElementsByClassName("container")[0];
             data.forEach(c => {

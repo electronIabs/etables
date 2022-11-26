@@ -4,11 +4,6 @@ export class FilterBox {
         this.box = document.createElement("div");
         this.colIndex = colIndex;
     }
-    static createSearchBox() {
-        let search = document.createElement("input");
-        search.setAttribute("placeholder", "search...");
-        return search;
-    }
     static getBoxColumnField(box) {
         return box.getAttribute(FilterBox.BOX_COL_FIELD);
     }
@@ -16,15 +11,7 @@ export class FilterBox {
         let uniqueData = [...new Set(this.etable.getRawData().map(r => r[colField]))];
         this.box.classList.add("etable-filterBox");
         this.box.setAttribute(FilterBox.BOX_COL_FIELD, colField);
-        let header = document.createElement("div");
-        let searchBox = FilterBox.createSearchBox();
-        let applyBtn = document.createElement("button");
-        applyBtn.innerText = "apply";
-        applyBtn.classList.add("ebtn");
-        applyBtn.addEventListener("click", e => this.applyFilter(this, e));
-        searchBox.addEventListener('keyup', e => this.SearchBoxKeyupEvent(this, e));
-        header.appendChild(searchBox);
-        header.appendChild(applyBtn);
+        let header = this.createHeader();
         header.classList.add("header");
         let body = this.createBody(uniqueData);
         this.box.appendChild(header);

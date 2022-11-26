@@ -1,6 +1,7 @@
 import ETable from "../ETable";
 import { newUID } from "./utils.js";
 
+
 export abstract class FilterBox {
     protected etable         : ETable;
     protected box            : HTMLDivElement;
@@ -13,11 +14,6 @@ export abstract class FilterBox {
         this.colIndex = colIndex;
     }
 
-    private static createSearchBox(): HTMLInputElement {
-        let search = document.createElement("input");
-        search.setAttribute("placeholder", "search...");
-        return search;
-    }
 
     static getBoxColumnField(box: HTMLDivElement): string | null {
          return box.getAttribute(FilterBox.BOX_COL_FIELD);
@@ -28,23 +24,15 @@ export abstract class FilterBox {
         //let bodyUID = newUID();
         this.box.classList.add("etable-filterBox");
         this.box.setAttribute(FilterBox.BOX_COL_FIELD, colField);
-        let header = document.createElement("div");
-        let searchBox = FilterBox.createSearchBox();
-        let applyBtn  = document.createElement("button");
-        applyBtn.innerText ="apply"; 
-        applyBtn.classList.add("ebtn");
-        applyBtn.addEventListener("click", e => this.applyFilter(this, e));
-        searchBox.addEventListener('keyup', e => this.SearchBoxKeyupEvent(this, e));
-        header.appendChild(searchBox);
-        header.appendChild(applyBtn);
-        header.classList.add("header")
+        let header = this.createHeader();
+        header.classList.add("header");
         let body = this.createBody(uniqueData);
         this.box.appendChild(header);
         this.box.appendChild(body);
         return this.box;
     }
 
-    abstract SearchBoxKeyupEvent(_this: FilterBox, e: KeyboardEvent): void;
+    abstract createHeader(): HTMLDivElement;
     abstract createBody(data : any[]) : HTMLDivElement;
     abstract applyFilter(_this: FilterBox, e: MouseEvent) : void;
 

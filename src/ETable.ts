@@ -1,7 +1,7 @@
 import createTd from './modules/utils.js';
 import ColumnDefs, {columndef} from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
-import EFilter from './modules/EFilter.js';
+import EFilter, {FilterRawFn} from './modules/EFilter.js';
 import EGroup, {EGroupOption, GroupedRow} from './modules/EGroup.js';
 
 
@@ -44,10 +44,10 @@ class ETable {
 		throw 'provided groupBy is not supported';
 	}
 
-	appendFilter(i: number, text: string[], exact: boolean): void {
+	appendFilter(i: number, filterFn: FilterRawFn): void {
 		let init	: EFilter[] = [];
 		this.filters = this.filters.reduce((p,c) => (c.getFilterColumnIndex() != i && p.push(c),p),init);
-		let filter 	= new EFilter(this.colDefs, i, text, exact);
+		let filter 	= new EFilter(this.colDefs, i, filterFn);
 		this.filters.push(filter);
 	}
 

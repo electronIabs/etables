@@ -151,6 +151,16 @@
     align-self: center;
 }
 
+.etable-filterBox div.body div.fcol {
+    display:flex;
+    flex-direction:column;
+}
+
+.etable-filterBox div.body input[type="date"] {
+    float:right;
+}
+
+
 .etable-filterBox div.body > div {
     border-bottom: 1px solid var(--etable-middle-gray);
 }
