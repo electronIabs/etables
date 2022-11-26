@@ -5,6 +5,7 @@ export interface columndef {
 	field			: string,
 	filter?			: any,
 	aggregate?		: any,
+	hidden			: null
 }
 
 class ColumnDefs {
@@ -21,7 +22,7 @@ class ColumnDefs {
 		this.coldefs.push(def);
 	}
 
-	getNames() {
+	getColumnNames() {
 		return this.coldefs.map( e => e['name'] );
 	}
 	
@@ -35,7 +36,7 @@ class ColumnDefs {
 
 	createRowFromFields(rowData: any) {
 		let tr = document.createElement('tr');
-		this.coldefs.forEach(e => {
+		this.coldefs.filter(cd => cd.hidden == null).forEach(e => {
 			let colKey = e['field'];
 			tr.appendChild(createTd(rowData[colKey]));
 		});
@@ -56,6 +57,10 @@ class ColumnDefs {
 			return true;
 		}
 		return false;
+	}
+
+	isHidden(index: number) {
+		return Object.keys(this.coldefs[index]).includes('hidden');
 	}
 
 	isAggregatable(index: number) {

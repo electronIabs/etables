@@ -1,7 +1,6 @@
 
 import { FilterBox } from "./FilterBox.js"
 import ETable from "../ETable";
-import EFilter from "./EFilter.js";
 
 class FilterBoxDate extends FilterBox {
     private static HTML_FROM_DATE_ID    = 'etable_filter_fd';

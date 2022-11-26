@@ -2,7 +2,6 @@ import ColumnDefs from "./ColumnDefs.js";
 import ETable from "../ETable.js";
 import CheckFilterBox from "./FilterCheckBox.js"; 
 import FilterBoxDate from "./FilterBoxDate.js"; 
-import { FilterBox } from "./FilterBox.js";
 
 // filters: equals, MoreThan, LessThan, contains
 // final_filter: composed of: and / or
@@ -57,7 +56,9 @@ class EFilter {
 
     
 	static createFilterButtons(table: HTMLTableElement, etable: ETable, colDefs: ColumnDefs) {
+        let hiddenCount = 0;
         for (let i = 0; i<colDefs.getColumnsCount(); i++) {
+            hiddenCount += colDefs.isHidden(i)?1:0;
             if (colDefs.isFilterable(i)) {
                 const currentField = colDefs.getFieldName(i);
                 const filterBoxType = colDefs.getColumnKeyValue(i, 'type') === 'date'?FilterBoxDate:CheckFilterBox;
@@ -86,7 +87,7 @@ class EFilter {
                     EFilter.positionBox(rect, box);
                     table.appendChild(box);
                 });
-                headerRow.cells[i].appendChild(filterBtn);
+                headerRow.cells[i - hiddenCount]?.appendChild(filterBtn);
             }
         }
 	}

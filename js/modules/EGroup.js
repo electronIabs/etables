@@ -1,4 +1,3 @@
-import EFilter from "./EFilter.js";
 import { cyrb53 } from "./utils.js";
 const identityResolver = (V) => V;
 const yearResolver = (v) => v.split("-")[0];
@@ -93,8 +92,11 @@ class EGroupTableConverter {
     }
     static createParentRow(groupOption, group) {
         var _a;
-        const colIndex = this.colDef.getFields().findIndex(f => f === groupOption.field);
-        group.aggregationVals = this.aggregator(group.raws);
+        const colIndex = this.colDef.getFields()
+            .filter((f, i) => !this.colDef.isHidden(i))
+            .findIndex(f => f === groupOption.field);
+        group.aggregationVals = (Array.from(this.aggregator(group.raws))
+            .filter((f, i) => !this.colDef.isHidden(i)));
         const groupBy = groupOption.groupBy;
         let tr;
         if (group.raws.length > 0) {
@@ -108,7 +110,7 @@ class EGroupTableConverter {
         }
         (_a = Array.from(tr.cells)) === null || _a === void 0 ? void 0 : _a.forEach((c, i) => {
             if (i != colIndex) {
-                c.innerText = "";
+                c.innerText = '';
             }
         });
         tr.cells[colIndex].innerHTML = groupBy(tr.cells[colIndex].innerHTML);
@@ -199,12 +201,10 @@ class EGroup {
                 'aggregationVals': [], 'childGroups': [], 'layer': layer });
         }
     }
-    createGroup(go, raws, filters) {
+    createGroup(go, raws) {
         let groupRows = [];
         raws.forEach(raw => {
-            if (EFilter.filterRow(raw, filters)) {
-                this.enrichRaw(groupRows, go, raw);
-            }
+            this.enrichRaw(groupRows, go, raw);
         });
         return groupRows;
     }
@@ -223,17 +223,17 @@ class EGroup {
         return rows;
     }
     processGrouped(go, group) {
-        let groupRows = this.createGroup(go, group.raws, []);
+        let groupRows = this.createGroup(go, group.raws);
         group.childGroups = groupRows;
     }
-    groupAll(raw, filters = []) {
+    groupAll(raw) {
         const colDefs = this.colDef;
         const grOpt = this.groupOptions;
         let layer0 = [];
         let nextLayer = layer0;
         grOpt.forEach((go, i) => {
             if (i == 0) {
-                layer0 = this.createGroup(go, raw, filters);
+                layer0 = this.createGroup(go, raw);
                 nextLayer = layer0;
             }
             else {

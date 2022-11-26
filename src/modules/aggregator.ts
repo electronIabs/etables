@@ -1,5 +1,4 @@
 import ColumnDefs from "./ColumnDefs.js";
-import { GroupedRow } from "./EGroup.js";
 
 type AggregatorFn = (r:number, v:number, i:number, rowCount:number) => number;
 
@@ -17,7 +16,7 @@ class TableAggregator {
 		this.#colDefs = colDefs;
 	}
 
-	private getAggregate(obj: any) {
+	private getAggregate(obj: any): Function {
 		if (typeof(obj) === 'string') {
 			switch(obj.toLowerCase()) {
 				case 'sum':
@@ -61,7 +60,7 @@ class TableAggregator {
 		return vals;
 	}
 
-	aggregateGroup(aggregatedRows : any[]): any[] {
+	aggregateGroup(aggregatedRows : HTMLTableRowElement[]): any[] {
 		const colDefs = this.#colDefs;
 		let vals: any[] = [];
 		for (let i=0; i<colDefs.getColumnsCount(); i++) {
@@ -69,7 +68,8 @@ class TableAggregator {
 				const aggregateObj 	= colDefs.getColumnKeyValue(i, 'aggregate'); 
 				const aggregateFn 	= this.getAggregate(aggregateObj);
 				vals[i] = 0.0;
-				aggregatedRows.forEach((row: HTMLTableRowElement, j: number) => {
+
+				aggregatedRows.forEach((row: HTMLTableRowElement, j) => {
 					const cellVal = parseFloat(row.cells[i].innerHTML);
 					if (isFinite(cellVal)) {
 						vals[i] = aggregateFn(vals[i], cellVal, j,aggregatedRows.length);

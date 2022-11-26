@@ -1,5 +1,4 @@
 import ColumnDefs from "./ColumnDefs.js";
-import EFilter from "./EFilter.js";
 import {cyrb53} from "./utils.js";
 
 interface GroupedRow {
@@ -131,8 +130,11 @@ class EGroupTableConverter {
     }
 
     static createParentRow(groupOption: EGroupOption, group: GroupedRow): HTMLTableRowElement {
-        const colIndex  = this.colDef.getFields().findIndex(f => f === groupOption.field);
-        group.aggregationVals   = this.aggregator(group.raws);
+        const colIndex  = this.colDef.getFields()
+                                        .filter((f,i) => !this.colDef.isHidden(i))
+                                        .findIndex(f => f === groupOption.field);
+        group.aggregationVals = <string[]> (Array.from(this.aggregator(group.raws))
+                                                .filter((f,i) => !this.colDef.isHidden(i)));
         const groupBy   = groupOption.groupBy;
         let tr : HTMLTableRowElement;
         if (group.raws.length > 0) {
@@ -142,10 +144,9 @@ class EGroupTableConverter {
         } else {
             throw `cannot create row for ${group}`;
         }
-        
         Array.from(tr.cells)?.forEach((c,i) => {
             if (i != colIndex) {
-                c.innerText = "";
+                c.innerText = '';
             }
         });
         tr.cells[colIndex].innerHTML = groupBy(tr.cells[colIndex].innerHTML);
@@ -162,9 +163,9 @@ class EGroupTableConverter {
             tr.classList.add(this.COLLAPSED_CLASS_NAME);
         }
         tr.addEventListener('click', e => this.toggleChildRows(group, <HTMLTableCellElement>e.target));
-        group.aggregationVals.map((v:string,i:number) => {return {'value':v, 'i':i};})
+        group.aggregationVals.map((v,i) => {return {'value':v, 'i':i};})
                                      .filter(v => v.value !== "")
-                                     .forEach( v => tr.cells[v.i].innerHTML = v.value);
+                                     .forEach(v => tr.cells[v.i].innerHTML = v.value);
         return tr;
     }
 
@@ -247,12 +248,10 @@ class EGroup {
     }
 
     
-    createGroup(go: EGroupOption, raws:any[], filters: EFilter[]): GroupedRow[] {
+    createGroup(go: EGroupOption, raws:any[]): GroupedRow[] {
         let groupRows: GroupedRow[] = [];    
         raws.forEach(raw => {
-            if (EFilter.filterRow(raw, filters)) {
-                this.enrichRaw(groupRows, go, raw);
-            } 
+            this.enrichRaw(groupRows, go, raw);
         });
         return groupRows;
     }
@@ -274,11 +273,11 @@ class EGroup {
     }
 
     private processGrouped(go: EGroupOption, group: GroupedRow) {
-        let groupRows = this.createGroup(go, group.raws, []);
+        let groupRows = this.createGroup(go, group.raws);
         group.childGroups = groupRows;
     }
 
-    groupAll(raw: any[], filters: EFilter[] = []): GroupedRow[] {
+    groupAll(raw: any[]): GroupedRow[] {
 		const colDefs   = this.colDef;
         const grOpt     = this.groupOptions;
         let layer0: GroupedRow[] = [];
@@ -286,7 +285,7 @@ class EGroup {
         
         grOpt.forEach((go, i) => {
             if (i == 0) {
-                layer0 = this.createGroup(go, raw, filters);
+                layer0 = this.createGroup(go, raw);
                 nextLayer = layer0;
             } else {
                 nextLayer.forEach(g => this.processGrouped(go, g));

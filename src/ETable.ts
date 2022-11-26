@@ -31,10 +31,21 @@ class ETable {
 		this.egroup 	= new EGroup(GroupOptions, this.colDefs, 
 										d => this.createRow(d),
 										r => this.aggregator.aggregate(r));
-
+		GroupOptions.forEach(go => ETable.validateGroupingOption(go, this.colDefs));
 		this.table 		= document.createElement('table');
 		this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
 		this.table.classList.add(this.#table_class)
+	}
+
+	static validateGroupingOption(go: EGroupOption, colDef: ColumnDefs){
+		if (!colDef.getFields().includes(go.field)) {
+			throw `field ${go.field} not found in  ${colDef.getFields()}`;
+		}
+		for (let i=0; i<colDef.getColumnsCount(); i++) {
+			if (colDef.isHidden(i) && colDef.getFieldName(i) === go.field) {
+				throw `field ${go.field} is hidden, cannot create grouping for it`;
+			}
+		}
 	}
 
 	static createGroupingOption(field: string, groupBy: Function | string) {
@@ -77,9 +88,11 @@ class ETable {
 	private createRowFromArray(rowData: any[], colDef : ColumnDefs) {
 		let tr = document.createElement('tr');
 		let i = 0;
-		rowData.forEach(element => {
-			tr.appendChild(createTd(element));
-			if (++i > colDef.getColumnsCount()) { return; }
+		rowData.forEach((element, j) => {
+			if (!colDef.isHidden(j)) {
+				tr.appendChild(createTd(element));
+				if (++i > colDef.getColumnsCount()) { return; }
+			}
 		});
 		return tr;
 	}
@@ -114,23 +127,21 @@ class ETable {
 	
 	private createHeader() {
 		let theader = document.createElement('thead');
-		let cols = this.colDefs.getNames();
+		let cols = this.colDefs.getColumnNames();
 		let tr = this.createRow(cols);
 		theader.appendChild(tr);
 		return theader;
 	}
 
-	private createFooterGrouped(groups: HTMLTableRowElement[]) {
-		let rows = groups.filter(tr => !['group-parent-child', 'group-parent'].some(r=> tr.classList.contains(r)));
+	private createFooterGrouped(raws: any[]) {
+		//let rows = groups.filter(tr => !['group-parent-child', 'group-parent'].some(r=> tr.classList.contains(r)));
 		let tfoot 		= document.createElement('tfoot');
-		let data:any[]	= this.aggregator.aggregateGroup(rows);
+		let data:any[]	= this.aggregator.aggregate(raws);
 		let row:any		= this.createRow(data);
 	    tfoot.appendChild(row);	
 		return tfoot;
 	}
 
-	
-	
 	render(): HTMLTableElement {
 		Array.from(this.table.getElementsByTagName("thead")).forEach(b => b.remove());
 		Array.from(this.table.getElementsByTagName("tbody")).forEach(b => b.remove());
@@ -143,23 +154,18 @@ class ETable {
 		//body
 		let tbody = document.createElement('tbody');
 		let rows: HTMLTableRowElement[] = [];
-		let filteredRaws: any[] = [];
+		let filteredRaws = this.getRawData().filter(r => EFilter.filterRow(r, this.filters));
 		if (this.gOptions > 0) {
-			let groups = this.egroup.groupAll(this.getRawData(), this.filters);
+			let groups = this.egroup.groupAll(filteredRaws);
 			rows = this.egroup.createTableRows(groups);
 		} else {
-			this.getRawData().forEach(raw => {
-				if (EFilter.filterRow(raw, this.filters)) {
-					rows.push(this.createRow(raw));
-					filteredRaws.push(raw);
-				} 
-			});
+			filteredRaws.forEach(r => rows.push(this.createRow(r)));
 		}
 		rows.forEach(tr => tbody.appendChild(tr));
 		this.table.appendChild(tbody);
 
 		//footer
-		this.table.appendChild(this.createFooterGrouped(rows));
+		this.table.appendChild(this.createFooterGrouped(filteredRaws));
 		
 		return this.table;
 	}

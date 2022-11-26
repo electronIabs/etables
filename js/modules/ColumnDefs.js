@@ -9,7 +9,7 @@ class ColumnDefs {
     _pushdef(def) {
         this.coldefs.push(def);
     }
-    getNames() {
+    getColumnNames() {
         return this.coldefs.map(e => e['name']);
     }
     getFields() {
@@ -20,7 +20,7 @@ class ColumnDefs {
     }
     createRowFromFields(rowData) {
         let tr = document.createElement('tr');
-        this.coldefs.forEach(e => {
+        this.coldefs.filter(cd => cd.hidden == null).forEach(e => {
             let colKey = e['field'];
             tr.appendChild(createTd(rowData[colKey]));
         });
@@ -37,6 +37,9 @@ class ColumnDefs {
             return true;
         }
         return false;
+    }
+    isHidden(index) {
+        return Object.keys(this.coldefs[index]).includes('hidden');
     }
     isAggregatable(index) {
         if (Object.keys(this.coldefs[index]).includes('aggregate')) {

@@ -20,9 +20,20 @@ class ETable {
         this.filters = [];
         this.gOptions = GroupOptions.length;
         this.egroup = new EGroup(GroupOptions, this.colDefs, d => this.createRow(d), r => this.aggregator.aggregate(r));
+        GroupOptions.forEach(go => ETable.validateGroupingOption(go, this.colDefs));
         this.table = document.createElement('table');
         this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
         this.table.classList.add(__classPrivateFieldGet(this, _table_class));
+    }
+    static validateGroupingOption(go, colDef) {
+        if (!colDef.getFields().includes(go.field)) {
+            throw `field ${go.field} not found in  ${colDef.getFields()}`;
+        }
+        for (let i = 0; i < colDef.getColumnsCount(); i++) {
+            if (colDef.isHidden(i) && colDef.getFieldName(i) === go.field) {
+                throw `field ${go.field} is hidden, cannot create grouping for it`;
+            }
+        }
     }
     static createGroupingOption(field, groupBy) {
         if (['string', 'function'].includes(typeof (groupBy))) {
@@ -61,10 +72,12 @@ class ETable {
     createRowFromArray(rowData, colDef) {
         let tr = document.createElement('tr');
         let i = 0;
-        rowData.forEach(element => {
-            tr.appendChild(createTd(element));
-            if (++i > colDef.getColumnsCount()) {
-                return;
+        rowData.forEach((element, j) => {
+            if (!colDef.isHidden(j)) {
+                tr.appendChild(createTd(element));
+                if (++i > colDef.getColumnsCount()) {
+                    return;
+                }
             }
         });
         return tr;
@@ -97,15 +110,14 @@ class ETable {
     }
     createHeader() {
         let theader = document.createElement('thead');
-        let cols = this.colDefs.getNames();
+        let cols = this.colDefs.getColumnNames();
         let tr = this.createRow(cols);
         theader.appendChild(tr);
         return theader;
     }
-    createFooterGrouped(groups) {
-        let rows = groups.filter(tr => !['group-parent-child', 'group-parent'].some(r => tr.classList.contains(r)));
+    createFooterGrouped(raws) {
         let tfoot = document.createElement('tfoot');
-        let data = this.aggregator.aggregateGroup(rows);
+        let data = this.aggregator.aggregate(raws);
         let row = this.createRow(data);
         tfoot.appendChild(row);
         return tfoot;
@@ -118,22 +130,17 @@ class ETable {
         EFilter.createFilterButtons(this.table, this, this.colDefs);
         let tbody = document.createElement('tbody');
         let rows = [];
-        let filteredRaws = [];
+        let filteredRaws = this.getRawData().filter(r => EFilter.filterRow(r, this.filters));
         if (this.gOptions > 0) {
-            let groups = this.egroup.groupAll(this.getRawData(), this.filters);
+            let groups = this.egroup.groupAll(filteredRaws);
             rows = this.egroup.createTableRows(groups);
         }
         else {
-            this.getRawData().forEach(raw => {
-                if (EFilter.filterRow(raw, this.filters)) {
-                    rows.push(this.createRow(raw));
-                    filteredRaws.push(raw);
-                }
-            });
+            filteredRaws.forEach(r => rows.push(this.createRow(r)));
         }
         rows.forEach(tr => tbody.appendChild(tr));
         this.table.appendChild(tbody);
-        this.table.appendChild(this.createFooterGrouped(rows));
+        this.table.appendChild(this.createFooterGrouped(filteredRaws));
         return this.table;
     }
 }

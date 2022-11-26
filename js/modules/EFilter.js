@@ -34,8 +34,10 @@ class EFilter {
         oldbox === null || oldbox === void 0 ? void 0 : oldbox.remove();
     }
     static createFilterButtons(table, etable, colDefs) {
-        var _a;
+        var _a, _b;
+        let hiddenCount = 0;
         for (let i = 0; i < colDefs.getColumnsCount(); i++) {
+            hiddenCount += colDefs.isHidden(i) ? 1 : 0;
             if (colDefs.isFilterable(i)) {
                 const currentField = colDefs.getFieldName(i);
                 const filterBoxType = colDefs.getColumnKeyValue(i, 'type') === 'date' ? FilterBoxDate : CheckFilterBox;
@@ -62,7 +64,7 @@ class EFilter {
                     EFilter.positionBox(rect, box);
                     table.appendChild(box);
                 });
-                headerRow.cells[i].appendChild(filterBtn);
+                (_b = headerRow.cells[i - hiddenCount]) === null || _b === void 0 ? void 0 : _b.appendChild(filterBtn);
             }
         }
     }
