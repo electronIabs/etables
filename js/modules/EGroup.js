@@ -188,6 +188,9 @@ class EGroup {
     }
     enrichRaw(rows, groupOption, raw) {
         const colField = groupOption.field;
+        if (undefined == raw[colField]) {
+            return;
+        }
         const groupKey = EGroup.hashKey(groupOption, raw[colField]);
         const layer = groupOption.layer;
         let grpI = rows.map(r => r.key).indexOf(groupKey);

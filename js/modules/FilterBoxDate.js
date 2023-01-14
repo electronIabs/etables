@@ -1,9 +1,10 @@
 import { FilterBox } from "./FilterBox.js";
 class FilterBoxDate extends FilterBox {
-    constructor(etable, colIndex) {
+    constructor(etable, colIndex, isMonth = false) {
         super(etable, colIndex);
         this.from_date = null;
         this.to_date = null;
+        this.isMonth = isMonth;
     }
     convertToDate(s) {
         return new Date(s);
@@ -31,8 +32,19 @@ class FilterBoxDate extends FilterBox {
         if (fd.valueAsDate !== null) {
             _this.from_date = fd.valueAsDate;
         }
+        else {
+            if (fd.value !== null) {
+                const fromdate = new Date(fd.value);
+                fromdate.setHours(0, 0, 0);
+                console.log("from date", fd.value, "=>", fromdate);
+                _this.from_date = fromdate;
+            }
+        }
         if (td.valueAsDate !== null) {
             _this.to_date = td.valueAsDate;
+        }
+        else {
+            _this.to_date = new Date(td.value);
         }
         _this.etable.appendFilter(_this.colIndex, (r, f) => _this.filterRaw(r, f, _this));
         _this.etable.render();
@@ -58,16 +70,16 @@ class FilterBoxDate extends FilterBox {
         let from_date = document.createElement("input");
         let label = document.createElement("label");
         const now = new Date();
-        from_date.setAttribute("type", "date");
+        from_date.setAttribute("type", "month");
         from_date.setAttribute("id", FilterBoxDate.HTML_FROM_DATE_ID);
-        from_date.valueAsDate = new Date(Date.UTC(now.getFullYear(), 0, 1));
+        from_date.value = now.getFullYear() + "-01";
         label.setAttribute("for", FilterBoxDate.HTML_FROM_DATE_ID);
         label.innerHTML = 'from date:';
         let to_date = document.createElement("input");
         let label2 = document.createElement("label");
-        to_date.setAttribute("type", "date");
+        to_date.setAttribute("type", "month");
         to_date.setAttribute("id", FilterBoxDate.HTML_TO_DATE_ID);
-        to_date.valueAsDate = new Date(Date.UTC(now.getFullYear() + 1, 0, 1));
+        to_date.value = (now.getFullYear() + 1) + "-01";
         label2.setAttribute("for", FilterBoxDate.HTML_TO_DATE_ID);
         label2.innerHTML = 'to date:';
         div1.appendChild(label);

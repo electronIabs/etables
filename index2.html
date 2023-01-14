@@ -30,15 +30,15 @@
         }
 
         function loadTable() {
-            let cols        = [ {name:"sub name", field:"name", filter:true},
+            let cols        = [ {name:"username", field:"user", filter:true},
                                 {name:"date", field:"date", filter:true, type:'date'},
                                 {name:"amount", field:"amount", aggregate:"sum"},
                                 {name:"note", field:"note"}
                               ];
 
-            let groupOptions = [    ETable.createGroupingOption('name', 'identity'),
+            let groupOptions = [    ETable.createGroupingOption('user', 'identity'),
                                     ETable.createGroupingOption('date', d=>everyNthYear(d,5))
-                                ];
+                               ];
             
             let etable       = new ETable(cols, groupOptions);
             let container    = document.getElementsByClassName("container")[0];
@@ -47,7 +47,6 @@
             });
 
             let table = etable.render();
-
             container.appendChild(table);
         }
 

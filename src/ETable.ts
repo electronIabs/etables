@@ -46,7 +46,8 @@ class ETable {
 
 	appendFilter(i: number, filterFn: FilterRawFn): void {
 		let init	: EFilter[] = [];
-		this.filters = this.filters.reduce((p,c) => (c.getFilterColumnIndex() != i && p.push(c),p),init);
+		this.filters = this.filters
+				.reduce((p,c) => (c.getFilterColumnIndex() != i && p.push(c),p),init);
 		let filter 	= new EFilter(this.colDefs, i, filterFn);
 		this.filters.push(filter);
 	}
@@ -55,6 +56,9 @@ class ETable {
 		this.filters = [];
 	}
 
+	findFirstByColumn(col: string, value: string ): Object | null {
+		return this.getRawData().find(r => r[col] == value );
+	}
 	
 	private createRowFromObject(rowData: Object, colDef : ColumnDefs) {
 		let tr = document.createElement('tr');

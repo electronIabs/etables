@@ -2,7 +2,6 @@
 import { newUID } from "./utils.js";
 import { FilterBox } from "./FilterBox.js"
 import ETable from "../ETable";
-import EFilter, {FilterRawFn} from "./EFilter.js";
 
 class CheckFilterBox extends FilterBox {
     private isExact : boolean;

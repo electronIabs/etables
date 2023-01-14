@@ -1,6 +1,4 @@
 import ETable from "../ETable";
-import { newUID } from "./utils.js";
-
 
 export abstract class FilterBox {
     protected etable         : ETable;
