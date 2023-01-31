@@ -235,6 +235,10 @@ class EGroup {
                         groupOption: EGroupOption,
                         raw : any) : void {
         const colField  = groupOption.field;
+        //todo raw[colField] can fail!
+        if (undefined == raw[colField]) {
+            return;
+        }
         const groupKey  = EGroup.hashKey(groupOption, raw[colField]);
         const layer     = groupOption.layer;
         let grpI = rows.map(r => r.key).indexOf(groupKey);

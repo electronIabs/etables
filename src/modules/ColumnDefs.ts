@@ -72,6 +72,7 @@ class ColumnDefs {
 		return false;
 	}
 
+
 	getName(index: number) {
 		return this.coldefs[index]['name']
 	}

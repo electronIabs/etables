@@ -29,14 +29,18 @@ class ETable {
         }
         throw 'provided groupBy is not supported';
     }
-    appendFilter(i, text, exact) {
+    appendFilter(i, filterFn) {
         let init = [];
-        this.filters = this.filters.reduce((p, c) => (c.getFilterColumnIndex() != i && p.push(c), p), init);
-        let filter = new EFilter(this.colDefs, i, text, exact);
+        this.filters = this.filters
+            .reduce((p, c) => (c.getFilterColumnIndex() != i && p.push(c), p), init);
+        let filter = new EFilter(this.colDefs, i, filterFn);
         this.filters.push(filter);
     }
     clearFilters() {
         this.filters = [];
+    }
+    findFirstByColumn(col, value) {
+        return this.getRawData().find(r => r[col] == value);
     }
     createRowFromObject(rowData, colDef) {
         let tr = document.createElement('tr');

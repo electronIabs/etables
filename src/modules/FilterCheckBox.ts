@@ -1,9 +1,43 @@
 
 import { newUID } from "./utils.js";
 import { FilterBox } from "./FilterBox.js"
-import EFilter from "./EFilter.js";
+import ETable from "../ETable";
 
 class CheckFilterBox extends FilterBox {
+    private isExact : boolean;
+    private text    : string[];
+    
+    constructor(etable: ETable, colIndex: number) {
+        super(etable, colIndex);
+        this.isExact    = true;
+        this.text       = [];
+    }
+
+    private static createSearchBox(): HTMLInputElement {
+        let search = document.createElement("input");
+        search.setAttribute("placeholder", "search...");
+        return search;
+    }
+    
+    private applyExact(raw: any, colField: string, _this: CheckFilterBox): boolean {
+        return _this.text.includes(raw[colField]);
+    }
+
+    private applyContains(raw: any, colField: string, _this: CheckFilterBox): boolean {
+        return _this.text.filter(v => raw[colField].includes(v)).length != 0;
+    }
+
+    private filterRaw(raw: any, colField: string, _this: CheckFilterBox): boolean {
+        if (_this.text.length == 0) {
+            return true;
+        }
+        if (_this.isExact) {
+            return (_this.applyExact(raw, colField, _this));
+        } else {
+            return (_this.applyContains(raw, colField, _this));
+        }
+    }
+
 
     filterBoxOptions(text: string): void {
         let array: any[] = Array.from(this.box.getElementsByClassName('body')[0].getElementsByTagName("label"));
@@ -17,9 +51,23 @@ class CheckFilterBox extends FilterBox {
         
     }
     
+    createHeader(): HTMLDivElement {
+        let header = document.createElement("div");
+        let searchBox = CheckFilterBox.createSearchBox();
+        let applyBtn  = document.createElement("button");
+        applyBtn.innerText ="apply"; 
+        applyBtn.classList.add("ebtn");
+        applyBtn.addEventListener("click", e => this.applyFilter(this, e));
+        searchBox.addEventListener('keyup', e => this.SearchBoxKeyupEvent(this, e));
+        header.appendChild(searchBox);
+        header.appendChild(applyBtn);
+        return header;
+    }
+
     applyFilter(_this: CheckFilterBox, e: MouseEvent) : void {
         //_this.etable.clearFilters();
-        _this.etable.appendFilter(_this.colIndex, _this.getCheckedOptions(), false);
+        _this.text = _this.getCheckedOptions();
+        _this.etable.appendFilter(_this.colIndex, (r,f) => this.filterRaw(r,f, this));
         _this.etable.render();
         _this.box.remove();
         
