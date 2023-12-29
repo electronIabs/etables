@@ -1,5 +1,4 @@
 import EFilter from "./EFilter.js";
-import { cyrb53 } from "./utils.js";
 const identityResolver = (V) => V;
 const yearResolver = (v) => v.split("-")[0];
 const decadeResolver = (v) => {
@@ -135,10 +134,6 @@ class EGroup {
         this.aggregator = agFn;
         EGroupTableConverter.setMandetory(this.colDef, this.rowCreator, this.aggregator);
     }
-    static hashKey(groupOptions, v) {
-        let value = groupOptions.groupBy(v);
-        return cyrb53(value);
-    }
     static getResolver(d) {
         let resolver = d;
         if (typeof (d) !== 'function') {
@@ -156,14 +151,14 @@ class EGroup {
     }
     enrichRaw(rows, groupOption, raw) {
         const colField = groupOption.field;
-        const groupKey = EGroup.hashKey(groupOption, raw[colField]);
+        const key = groupOption.groupBy(raw[colField]);
         const layer = groupOption.layer;
-        let grpI = rows.map(r => r.key).indexOf(groupKey);
+        let grpI = rows.map(r => r.key).indexOf(key);
         if (grpI >= 0) {
             rows[grpI].raws.push(raw);
         }
         else {
-            rows.push({ 'key': groupKey, 'raws': [raw], 'expanded': false,
+            rows.push({ 'key': key, 'raws': [raw], 'expanded': false,
                 'aggregationVals': [], 'childGroups': [], 'layer': layer });
         }
     }

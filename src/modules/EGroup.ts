@@ -1,7 +1,5 @@
-import ETable from "../ETable.js";
 import ColumnDefs from "./ColumnDefs.js";
 import EFilter from "./EFilter.js";
-import createTd, {cyrb53} from "./utils.js";
 
 interface GroupedRow {
     key                 :string;
@@ -192,11 +190,6 @@ class EGroup {
         EGroupTableConverter.setMandetory(this.colDef, this.rowCreator, this.aggregator);
     }
 
-    private static hashKey(groupOptions: EGroupOption, v: string): string {
-        let value = groupOptions.groupBy(v)
-        return cyrb53(value);
-    }
-
     private static getResolver(d:any): KeyResolverFn {
         let resolver = d;
         if (typeof(d) !== 'function') {
@@ -215,13 +208,13 @@ class EGroup {
                         groupOption: EGroupOption,
                         raw : any) : void {
         const colField  = groupOption.field;
-        const groupKey  = EGroup.hashKey(groupOption, raw[colField]);
+        const key = groupOption.groupBy(raw[colField]);
         const layer     = groupOption.layer;
-        let grpI = rows.map(r => r.key).indexOf(groupKey);
+        let grpI = rows.map(r => r.key).indexOf(key);
         if (grpI >= 0) {
             rows[grpI].raws.push(raw);
         } else {
-            rows.push({    'key': groupKey, 'raws': [raw], 'expanded': false,
+            rows.push({    'key': key, 'raws': [raw], 'expanded': false,
                                 'aggregationVals':[], 'childGroups': [], 'layer': layer });
         }
     }

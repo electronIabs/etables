@@ -1,31 +1,36 @@
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, privateMap, value) {
-    if (!privateMap.has(receiver)) {
-        throw new TypeError("attempted to set private field on non-instance");
-    }
-    privateMap.set(receiver, value);
-    return value;
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
 };
-var _colDefs;
+var _EFilter_colDefs;
 import CheckFilterBox from "./FilterCheckBox.js";
 class EFilter {
     constructor(ColumnDefs, colIndex, text, isExact = true) {
-        _colDefs.set(this, void 0);
+        _EFilter_colDefs.set(this, void 0);
         this.text = [];
         this.isExact = false;
+        if (text.constructor.name != 'Array') {
+            throw new Error('passed argument should be array of strings');
+        }
         this.colField = ColumnDefs.getFieldName(colIndex);
         this.colIndex = colIndex;
-        __classPrivateFieldSet(this, _colDefs, ColumnDefs);
+        __classPrivateFieldSet(this, _EFilter_colDefs, ColumnDefs, "f");
         this.text = text;
         this.isExact = isExact;
     }
     getFilterColumnIndex() {
         return this.colIndex;
     }
+    getFieldStr(raw) {
+        return String(raw[this.colField]);
+    }
     applyExact(raw) {
-        return this.text.includes(raw[this.colField]);
+        return this.text.includes(this.getFieldStr(raw));
     }
     applyContains(raw) {
-        return this.text.filter(v => raw[this.colField].includes(v)).length != 0;
+        return this.text.filter(v => this.getFieldStr(raw).includes(v)).length != 0;
     }
     applyFilter(row) {
         if (this.text.length == 0) {
@@ -40,9 +45,9 @@ class EFilter {
     }
     static filterRow(raw, filters) {
         let result = true;
-        filters.forEach(filter => {
+        for (const filter of filters) {
             result = result && filter.applyFilter(raw);
-        });
+        }
         return result;
     }
     static positionBox(rect, box) {
@@ -94,7 +99,7 @@ class EFilter {
         }
     }
 }
-_colDefs = new WeakMap();
+_EFilter_colDefs = new WeakMap();
 EFilter.FilterBoxClass = "etable-filterBox";
 EFilter.FilterButtonClass = "filterBtn";
 export default EFilter;

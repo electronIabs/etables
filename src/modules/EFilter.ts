@@ -15,6 +15,10 @@ class EFilter {
     static readonly FilterButtonClass              = "filterBtn";
 
     constructor(ColumnDefs: ColumnDefs, colIndex: number, text: string[], isExact: boolean = true) {
+        if (text.constructor.name != 'Array') {
+            throw new Error('passed argument should be array of strings');  
+        }
+
         this.colField   = ColumnDefs.getFieldName(colIndex);
         this.colIndex   = colIndex;
         this.#colDefs   = ColumnDefs;
@@ -26,12 +30,16 @@ class EFilter {
         return this.colIndex;
     }
 
+    private getFieldStr(raw: any) : string {
+        return String(raw[this.colField]);
+    }
+
     private applyExact(raw: any): boolean {
-        return this.text.includes(raw[this.colField]);
+        return this.text.includes(this.getFieldStr(raw));
     }
 
     private applyContains(raw: any): boolean {
-        return this.text.filter(v => raw[this.colField].includes(v)).length != 0;
+        return this.text.filter(v => this.getFieldStr(raw).includes(v)).length != 0;
     }
 
     private applyFilter(row: any): boolean {
@@ -47,9 +55,9 @@ class EFilter {
 
     static filterRow(raw: any, filters: EFilter[]) {
         let result = true;
-        filters.forEach(filter => {
+        for (const filter of filters) {
             result = result && filter.applyFilter(raw);
-        });
+        }
         return result;
     }
 
@@ -69,7 +77,6 @@ class EFilter {
         let oldbox = table.getElementsByClassName("etable-filterBox")[0];
         oldbox?.remove();
     }
-
     
 	static createFilterButtons(table: HTMLTableElement, etable: ETable, colDefs: ColumnDefs) {
         for (let i = 0; i<colDefs.getColumnsCount(); i++) {

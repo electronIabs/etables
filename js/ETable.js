@@ -1,10 +1,9 @@
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, privateMap) {
-    if (!privateMap.has(receiver)) {
-        throw new TypeError("attempted to get private field on non-instance");
-    }
-    return privateMap.get(receiver);
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _table_class;
+var _ETable_table_class;
 import createTd from './modules/utils.js';
 import ColumnDefs from './modules/ColumnDefs.js';
 import TableAggregator from './modules/aggregator.js';
@@ -13,7 +12,7 @@ import EGroup from './modules/EGroup.js';
 const TABLE_CLASS = "e-table";
 class ETable {
     constructor(header_cols, GroupOptions = []) {
-        _table_class.set(this, TABLE_CLASS);
+        _ETable_table_class.set(this, TABLE_CLASS);
         this.raws = [];
         this.colDefs = new ColumnDefs(header_cols);
         this.aggregator = new TableAggregator(this.colDefs);
@@ -22,7 +21,7 @@ class ETable {
         this.egroup = new EGroup(GroupOptions, this.colDefs, d => this.createRow(d), r => this.aggregator.aggregate(r));
         this.table = document.createElement('table');
         this.table.addEventListener('click', e => EFilter.tableClickEvent(this.table, e));
-        this.table.classList.add(__classPrivateFieldGet(this, _table_class));
+        this.table.classList.add(__classPrivateFieldGet(this, _ETable_table_class, "f"));
     }
     static createGroupingOption(field, groupBy) {
         if (['string', 'function'].includes(typeof (groupBy))) {
@@ -137,5 +136,5 @@ class ETable {
         return this.table;
     }
 }
-_table_class = new WeakMap();
+_ETable_table_class = new WeakMap();
 export default ETable;

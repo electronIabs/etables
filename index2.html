@@ -25,10 +25,10 @@
         function loadTable() {
             let cols        = [ {name:"sub name", field:"name", filter:true},
                                 {name:"date", field:"date", filter:true},
-                                {name:"amount", field:"amount", aggregate:"sum"},
+                                {name:"amount", field:"amount", aggregate:"sum", filter:true},
                                 {name:"note", field:"note"}
                               ];
-            console.log();
+                              
             
             let groupOptions = [    ETable.createGroupingOption('name', '1'),
                                     ETable.createGroupingOption('date', 'decade'),
@@ -37,9 +37,7 @@
             
             let etable       = new ETable(cols, groupOptions);
             let container    = document.getElementsByClassName("container")[0];
-            data.forEach(c => {
-                etable.addRow(c);
-            });
+            data.forEach(c => etable.addRow(c));
 
             let table = etable.render();
 

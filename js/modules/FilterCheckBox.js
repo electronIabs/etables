@@ -19,13 +19,10 @@ class CheckFilterBox extends FilterBox {
     }
     getCheckedOptions() {
         let array = Array.from(this.box.getElementsByClassName('body')[0].getElementsByTagName("label"));
-        let result = [];
-        array.forEach(lbl => {
-            var _a;
-            if (!lbl.parentElement.hidden && ((_a = lbl.parentElement.getElementsByTagName("input")[0]) === null || _a === void 0 ? void 0 : _a.checked)) {
-                result.push(lbl.innerHTML);
-            }
-        });
+        const result = array
+            .filter(lbl => !lbl.parentElement.hidden)
+            .filter(lbl => { var _a; return (_a = lbl.parentElement.getElementsByTagName("input")[0]) === null || _a === void 0 ? void 0 : _a.checked; })
+            .map(lbl => lbl.textContent);
         return result;
     }
     SearchBoxKeyupEvent(_this, e) {
@@ -37,7 +34,7 @@ class CheckFilterBox extends FilterBox {
         let div = document.createElement("div");
         let checkbox = document.createElement("input");
         let label = document.createElement("label");
-        let uid = newUID();
+        let uid = newUID('etable-fcb');
         checkbox.setAttribute("type", 'checkbox');
         checkbox.checked = true;
         checkbox.setAttribute("id", uid);

@@ -28,12 +28,10 @@ class CheckFilterBox extends FilterBox {
 
     getCheckedOptions(): string[] {
         let array: any[] = Array.from(this.box.getElementsByClassName('body')[0].getElementsByTagName("label"));
-        let result: string[] = [];
-        array.forEach(lbl => {
-            if (!lbl.parentElement.hidden && lbl.parentElement.getElementsByTagName("input")[0]?.checked) {
-                result.push(lbl.innerHTML);
-            }
-        });
+        const result : string[] = array
+                                        .filter(lbl => !lbl.parentElement.hidden)
+                                        .filter(lbl => lbl.parentElement.getElementsByTagName("input")[0]?.checked)
+                                        .map(lbl => lbl.textContent);
         return result;
     }
     
@@ -47,7 +45,7 @@ class CheckFilterBox extends FilterBox {
         let div = document.createElement("div");
         let checkbox = document.createElement("input");
         let label = document.createElement("label");
-        let uid = newUID();
+        let uid = newUID('etable-fcb');
         checkbox.setAttribute("type", 'checkbox');
         checkbox.checked = true;
         checkbox.setAttribute("id", uid);
